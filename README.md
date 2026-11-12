@@ -2,7 +2,8 @@
 
 面向**跨数据团队（DATA）与模型团队（MODEL）的递归自我改进（RSI）项目**的可落地模式：**Spec 平面（SDD）× Knowledge 平面（知识工程）× Execution 平面（流水线与门禁）**，AI Agent——含 RSI 循环自身的改进提案——为一等公民。
 
-- 完整设计读 [MODE.md](MODE.md)
+- 模式设计读 [MODE.md](MODE.md)
+- **明天怎么开工读 [GUIDE.md](GUIDE.md)**（按角色导航、14 天冷启动、日常操作流、报错对照）
 - Agent 入口读 [AGENTS.md](AGENTS.md)
 
 ## 三平面一图
@@ -14,6 +15,8 @@
 ```
 
 ## 快速上手（3 步）
+
+> 正式部署（把示例换成你们团队的真实工件）按 [GUIDE.md §2 冷启动 14 天](GUIDE.md) 操作。
 
 ```bash
 # 1. 校验整个三平面一致性（这也是 CI 门禁 G1 的内容）
