@@ -1,0 +1,35 @@
+{
+  "evidence_kind": "synthetic-dryrun",
+  "note": "合成证据，仅用于验证 P3/G3 门禁逻辑（LANDABILITY-001 D0）。字段形状对齐 S-001 / S-004，数字全部虚构。",
+  "run_id": "DRY-001",
+  "cycle": "F-2026-001",
+  "contracts": {
+    "EVAL-BENCH": "1.0.0",
+    "MDL-CKPT": "1.0.0",
+    "SFT-PAIRS": "1.0.0"
+  },
+  "eval": {
+    "holdout_ref": "holdout-toolcall-v1",
+    "holdout_size": 812,
+    "judge_version": "judge-toolcall@v1.3.0",
+    "decoding": { "temperature": 0.0, "seed": 20261112, "max_tokens": 1536, "concurrency": 8 },
+    "baseline": { "model": "champion@c-2026-11-a", "cost_per_solve": 0.42 },
+    "challenger": {
+      "model": "challenger@ckpt-2026-11-d4",
+      "target_gain": 3.4,
+      "regression_dims": 0,
+      "cost_per_solve": 0.44
+    },
+    "runs": [
+      { "run": "r1", "target": 0.7142 },
+      { "run": "r2", "target": 0.7119 }
+    ]
+  },
+  "audit": {
+    "eval_leak_count": 0,
+    "channels": ["ngram-minhash", "embedding-ann"],
+    "deny_list_side": "DATA",
+    "raw_holdout_on_train_host": false
+  },
+  "scenarios": { "total": 21, "passed": 21, "suite": "p3-convergence/loop-suite" }
+}
