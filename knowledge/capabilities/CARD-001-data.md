@@ -9,8 +9,8 @@ status: accepted
 owner: "@liu-yan"
 provenance: [能力盘点-2026-Q4]
 expires: 2027-02-15
-provides: [DS-TRAINMIX.v1, EVAL-BENCH.v1]
-consumes: [TRJ-ROLLOUT.v1]
+provides: [DS-TRAINMIX.v1, EVAL-BENCH.v1, DQ-QUALITY.v1, FLY-CYCLE.v1]
+consumes: [TRJ-ROLLOUT.v1, TRN-HEALTH.v1]
 contact: "#data-rsi-oncall"
 ---
 
@@ -20,7 +20,8 @@ contact: "#data-rsi-oncall"
 
 - 轨迹清洗、去重、脱敏复核与训练集组装（每周批次，SLA 见契约）；
 - 评测执行与污染审计——**循环的裁判**（评测权，ADR-0001）；
-- holdout 基准的维护与轮换（45 天），judge 版本登记。
+- holdout 基准的维护与轮换（45 天），judge 版本登记；
+- 数据开发与飞轮指标契约（DQ-QUALITY / FLY-CYCLE）的定义与采集实现（`quality_suite`）。
 
 ## 边界与非目标
 

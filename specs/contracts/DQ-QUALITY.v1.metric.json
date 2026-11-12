@@ -1,0 +1,28 @@
+{
+  "x-contract": {
+    "id": "DQ-QUALITY",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": ["MODEL"],
+    "compatibility": "backward",
+    "steward": "@dataset-steward"
+  },
+  "x-telemetry": {
+    "collect": "quality_suite 在批次发布/失败时上报 metrics-store.rsi.internal（Prometheus 协议占位），快照落 reports/<batch>/profile.json",
+    "metrics": [
+      { "id": "dq_job_success_rate", "def": "数据管道作业成功率（周窗口）", "unit": "ratio", "slo": ">= 0.99", "alert": "warn@0.99 crit@0.95" },
+      { "id": "dq_freshness_lag_days", "def": "批次发布时点 − 事件时间上界", "unit": "days", "slo": "<= 7", "alert": "crit@10" },
+      { "id": "dq_batch_count", "def": "周批次有效样本条数", "unit": "records", "slo": ">= 20000" },
+      { "id": "dq_dedup_rate", "def": "pairwise 去重率", "unit": "ratio", "slo": ">= 0.995", "binds": "DS-TRAINMIX.v1.x-quality[pairwise_dedup_rate]" },
+      { "id": "dq_eval_leak_count", "def": "holdout 及衍生的泄漏命中数（P3 双通道审计原值）", "unit": "count", "slo": "== 0", "binds": "DS-TRAINMIX.v1.x-quality[eval_leak_count]", "note": "单一实现：监控只搬运审计结果，禁止二次计算" },
+      { "id": "dq_lineage_complete_rate", "def": "lineage 可回溯样本占比", "unit": "ratio", "slo": "== 1.0" },
+      { "id": "dq_schema_drift_count", "def": "周批次相对契约声明的 schema 漂移计数（CR 批准的除外）", "unit": "count/week", "slo": "== 0" },
+      { "id": "dq_mix_composition", "def": "按 source（human/rollout/distilled/synthetic）的占比分布", "unit": "ratio-vector", "informational": true, "note": "调优观察项；越限告警由 DS-TRAINMIX synthetic_share 断言负责" },
+      { "id": "dq_token_len_p90", "def": "样本 token 长度 P90（分桶）", "unit": "tokens", "informational": true }
+    ]
+  },
+  "title": "数据开发质量画像指标契约",
+  "description": "数据管道与数据集的 profiling 指标唯一定义源。仪表盘与告警只准引用本文件指标 ID（裸名禁止，check.py 校验）。定义变更 = 破坏性变更走 CR。"
+}

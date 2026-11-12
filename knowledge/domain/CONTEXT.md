@@ -39,3 +39,9 @@ expires: 2027-02-01
 | 冻结（frozen） | 循环起跑线：契约口径锁定，循环中禁改 | 不是代码冻结 | MODE §3.3 |
 | KB（联签） | DATA+MODEL+AGENT 三方 Steward 对转正上线的签核 | 不是单团队上线审批 | G4 |
 | 负结果 | challenger 未达标但证据完整的循环产出 | 不是失败废料——必须蒸馏入库 | G5 |
+| 裸名指标 | 报告中出现未绑定 metric 契约 ID 的监控数字 | 引用 `dq_dedup_rate` 这类已注册 ID 不算 | observability 原则1 |
+| dashboard-as-code | 仪表盘是 metric 契约的声明式投影，面板只准引用注册指标 | 不是手工搭的 Grafana 盘 | observability §原则2 |
+| profile 快照 | 批级/run 级/循环级三层指标原始值的归档（reports/ 下，≥90 天） | 不是截图 | observability/profiling.md |
+| 实验指纹 | 训练 run 登记的数据集版本 + 评测协议版本 + 配置哈希 | 不是 git commit hash | TRN-HEALTH.v1 |
+| 回流转化率 | episode → 训练 mix 样本的转化比例（飞轮第一性指标） | 不是数据量增长率 | FLY-CYCLE.v1 |
+| 换尺子观测 | 季度内评测协议变更 CR 数的监控形态 | 长期为 0 = 审计可疑 | fly_respec_count |

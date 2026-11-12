@@ -22,7 +22,7 @@ EPIC_STATUS = FEATURE_STATUS
 CONTRACT_STATUS = {"active", "deprecated"}
 KNOWLEDGE_STATUS = {"candidate", "accepted", "retired", "superseded", "proposed"}
 SCENARIO_STATUS = {"draft", "accepted", "retired"}
-FLAVOR_KIND = {"openapi": "api", "asyncapi": "event", "schema": "dataset", "model": "model", "eval": "eval"}
+FLAVOR_KIND = {"openapi": "api", "asyncapi": "event", "schema": "dataset", "model": "model", "eval": "eval", "metric": "metric"}
 DIR_TYPE = {
     "domain": "glossary",
     "capabilities": "capability",
@@ -31,7 +31,7 @@ DIR_TYPE = {
     "pitfalls": "pitfall",
     "runbooks": "runbook",
 }
-CONTRACT_NAME_RE = re.compile(r"^(?P<id>[A-Z]{2,8}-[A-Z0-9]+)\.v(?P<major>\d+)\.(?P<flavor>openapi|asyncapi|schema|model|eval)\.json$")
+CONTRACT_NAME_RE = re.compile(r"^(?P<id>[A-Z]{2,8}-[A-Z0-9]+)\.v(?P<major>\d+)\.(?P<flavor>openapi|asyncapi|schema|model|eval|metric)\.json$")
 STEM_ID_RE = re.compile(r"^(?P<id>[A-Z]{2,6}-[0-9]{1,4}|[A-Z]{2,6}-[0-9]{4})(?=(-|$))")
 
 errors: list = []
@@ -166,6 +166,23 @@ def load_contracts():
             for ext in ("x-signature", "x-budget", "x-fallback"):
                 if not doc.get(ext):
                     err(where, f"模型契约必须声明 {ext}（接口签名 / 成本与延迟预算 / 降级策略）")
+        elif flavor == "metric":
+            tele = doc.get("x-telemetry")
+            if not isinstance(tele, dict) or not tele.get("metrics"):
+                err(where, "指标契约必须声明 x-telemetry.metrics（非空指标列表）")
+            else:
+                if not tele.get("collect"):
+                    err(where, "x-telemetry 必须声明 collect（口径绑定发射点：哪个阶段、哪个组件上报）")
+                seen: set = set()
+                for m in tele["metrics"]:
+                    if not isinstance(m, dict) or not all(m.get(k) for k in ("id", "def", "unit")):
+                        err(where, f"指标条目缺 id/def/unit：{m}")
+                        continue
+                    if not m.get("slo") and not m.get("informational"):
+                        err(where, f"指标 `{m['id']}` 必须声明 slo 或标注 informational: true——没有阈值的指标只是数字")
+                    if m["id"] in seen:
+                        err(where, f"契约内指标 ID 重复：{m['id']}")
+                    seen.add(m["id"])
         status = xc.get("status")
         if status not in CONTRACT_STATUS:
             err(where, f"status `{status}` 非法（{sorted(CONTRACT_STATUS)}）")
@@ -270,6 +287,59 @@ def check_capability_vs_contracts(knowledge, contracts):
                 warn(c["file"], f"consumer BU `{consumer}` 没有能力卡")
             elif ckey not in bus[consumer]["fm"].get("consumes", []):
                 err(bus[consumer]["file"], f"契约 {ckey} 声明 {consumer} 为 consumer，但能力卡 consumes 未列出")
+
+
+# ---------------------------------------------------------------- metric & boards
+
+def collect_metric_registry(contracts):
+    """metric_id -> 契约基名。跨契约重复即违反单一事实源。"""
+    reg = {}
+    for k, c in contracts.items():
+        tele = c["doc"].get("x-telemetry")
+        if not isinstance(tele, dict):
+            continue
+        base = k.split(".v")[0]
+        for m in tele.get("metrics", []):
+            mid = m.get("id") if isinstance(m, dict) else None
+            if not mid:
+                continue
+            if mid in reg and reg[mid] != base:
+                err(c["file"], f"指标 ID 跨契约冲突：{mid}（已在 {reg[mid]} 定义）——单一事实源")
+            reg[mid] = base
+    return reg
+
+
+def check_boards(contracts):
+    reg = collect_metric_registry(contracts)
+    ddir = ROOT / "observability" / "dashboards"
+    if not ddir.is_dir():
+        return reg
+    for path in sorted(ddir.glob("*.board.json")):
+        where = str(path.relative_to(ROOT))
+        try:
+            board = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            err(where, f"JSON 解析失败: {e}")
+            continue
+        if not board.get("boardId"):
+            err(where, "board 必须声明 boardId")
+        if not board.get("rows"):
+            warn(where, "board 无面板（仪表盘考古候选）")
+        for row in board.get("rows", []):
+            for panel in row.get("panels", []):
+                mid, src = panel.get("metric"), panel.get("source")
+                if not mid or not src:
+                    err(where, f"面板 `{panel.get('panelId', '?')}` 必须引用 metric + source 契约（裸名指标禁止）")
+                    continue
+                if mid not in reg:
+                    err(where, f"面板引用未定义指标 `{mid}`——先在 metric 契约中定义再上板")
+                elif src.split(".v")[0] != reg[mid]:
+                    err(where, f"面板指标 `{mid}` 与 source `{src}` 不符（注册表：{reg[mid]}）")
+        for al in board.get("alerts", []):
+            tok = re.split(r"[><=!]+", str(al.get("on", "")))[0].strip()
+            if tok and tok not in reg:
+                err(where, f"告警规则引用未定义指标 `{tok}`")
+    return reg
 
 
 # ---------------------------------------------------------------- specs
@@ -404,6 +474,7 @@ def load_agents_entry():
 def cmd_lint(strict: bool) -> int:
     load_agents_entry()
     contracts = load_contracts()
+    check_boards(contracts)
     knowledge = load_knowledge()
     bu_codes.update(k["fm"].get("bu") for k in knowledge.values() if k["type"] == "capability")
     check_capability_vs_contracts(knowledge, contracts)
@@ -423,6 +494,7 @@ def cmd_lint(strict: bool) -> int:
 def cmd_stats(changed: str) -> int:
     load_agents_entry()
     contracts = load_contracts()
+    mreg = check_boards(contracts)
     knowledge = load_knowledge()
     bu_codes.update(k["fm"].get("bu") for k in knowledge.values() if k["type"] == "capability")
     check_capability_vs_contracts(knowledge, contracts)
@@ -448,6 +520,7 @@ def cmd_stats(changed: str) -> int:
 
     print("TriPlane 健康度仪表盘")
     print(f"  Epic {len(epics)} · Feature {len(features)}（frozen/released: {len(frozen)}）· 契约 {len(cids)} 个 ID / {len(contracts)} 个版本 · 场景 {len(scenarios)} · 知识 {len(knowledge)}")
+    print(f"  指标契约: {sum(1 for c in contracts.values() if c['doc'].get('x-telemetry'))} 个 / 注册指标 {len(mreg)} 个")
     print(f"  契约场景覆盖率: {len(cov)}/{len(cids)}")
     print(f"  知识新鲜度: {len(fresh)}/{len(knowledge)}" + (f" · 30 天内到期: {', '.join(expiring)}" if expiring else ""))
     print(f"  未被消费的 accepted 知识（90 天规则观察项）: {', '.join(unreferenced) if unreferenced else '—'}")

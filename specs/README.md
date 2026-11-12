@@ -20,8 +20,8 @@ E ──► F（循环规格）──► Contract（五类，机器可读 JSON�
 | Contract | `<域码>-<动作>` | `<ID>.v<major>.<flavor>.json` | `specs/contracts/` |
 | Scenario | `S-<num>` | `S-001-<slug>.md` | `specs/scenarios/` |
 
-- 域码 = 提供方域缩写（见 [术语表](../knowledge/domain/CONTEXT.md)）：`TRJ` 轨迹 / `DS` 数据集 / `EVAL` 评测协议 / `MDL` 模型服务。
-- flavor ∈ `openapi`(api) / `asyncapi`(event) / `schema`(dataset) / `eval`(评测协议) / `model`(模型契约)。
+- 域码 = 提供方域缩写（见 [术语表](../knowledge/domain/CONTEXT.md)）：`TRJ` 轨迹 / `DS` 数据集 / `EVAL` 评测协议 / `MDL` 模型服务 / `DQ` 数据开发指标 / `TRN` 训练指标 / `FLY` 飞轮指标。
+- flavor ∈ `openapi`(api) / `asyncapi`(event) / `schema`(dataset) / `eval`(评测协议) / `model`(模型契约) / `metric`(指标契约)。
 - 文件名 `v<major>` 必须与 `x-contract.version` 主版本一致。
 
 ## 状态机

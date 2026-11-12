@@ -1,0 +1,26 @@
+{
+  "x-contract": {
+    "id": "TRN-HEALTH",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@model-steward"
+  },
+  "x-telemetry": {
+    "collect": "trainkit hooks 在每个训练 run 自动上报（含中途失败 run）；run 级 profile 快照落 model-registry/<run>/profile.json",
+    "metrics": [
+      { "id": "trn_mfu", "def": "Model FLOPs Utilization（算力利用率）", "unit": "ratio", "slo": ">= 0.45", "alert": "warn@0.45 crit@0.30" },
+      { "id": "trn_tokens_per_hr", "def": "有效 token 吞吐（扣除重算与回滚段）", "unit": "tokens/hr", "informational": true },
+      { "id": "trn_loss_spike_events", "def": "loss 尖峰检测事件数（滑动窗口 z-score > 4）", "unit": "count/run", "slo": "== 0", "note": "非零不自动 kill，但必须在 run 报告里归因" },
+      { "id": "trn_grad_norm_p99", "def": "梯度范数 P99", "unit": "ratio", "informational": true },
+      { "id": "trn_kl_drift", "def": "challenger 对 champion 策略的 KL 漂移（proxy 估计）", "unit": "nats", "slo": "<= 0.15", "note": "过大 = 过优化/Goodhart 前兆，触发 guard 维度加测" },
+      { "id": "trn_reward_hacking_flags", "def": "判分异常模式标记数（同模板高分簇、judge 分歧率突增）", "unit": "count/run", "slo": "== 0" },
+      { "id": "trn_fingerprint_reg_rate", "def": "run 注册了契约版本指纹（数据集+评测协议+轨迹契约）的比例", "unit": "ratio", "slo": "== 1.0", "note": "缺指纹的 run 判不可比，G3 直接拒收" }
+    ]
+  },
+  "title": "模型训练健康画像指标契约",
+  "description": "训练过程 profiling 与调优的指标定义源。run 级与循环级调优只引用本文件 ID；口径变更走 CR，SLO 变更需 DATA 侧（评测可比性受影响）。"
+}

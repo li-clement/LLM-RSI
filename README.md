@@ -32,13 +32,14 @@ cp templates/feature-spec.md specs/features/F-2026-002-xxx.md
 
 | 目录 | 内容 | 平面 |
 |---|---|---|
-| [specs/](specs/README.md) | 工件链规则、状态机、命名、五类契约与版本策略 + 端到端示例 | Spec |
+| [specs/](specs/README.md) | 工件链规则、状态机、命名、六类契约与版本策略 + 端到端示例 | Spec |
 | [knowledge/](knowledge/README.md) | 六类知识资产的元数据 schema、生命周期、回流规则 + 示例 | Knowledge |
 | [pipelines/](pipelines/README.md) | 四流水线模型（含 P3 评测收敛）、五道门禁、CI 配置示例 | Execution |
-| [agents/playbooks.md](agents/playbooks.md) | 7 个流水线内嵌 Agent 的任务书 + RSI 自提案治理 | 跨平面 |
-| [templates/](templates/) | 六类工件模板 | — |
-| [tools/check.py](tools/check.py) | 三平面一致性校验器 | — |
+| [observability/](observability/README.md) | 监控体系 + 三层 profiling 调优 + dashboard-as-code | Execution |
+| [agents/playbooks.md](agents/playbooks.md) | 8 个流水线内嵌 Agent 的任务书 + RSI 自提案治理 | 跨平面 |
+| [templates/](templates/) | 七类工件模板（含 metric 契约） | — |
+| [tools/check.py](tools/check.py) | 三平面一致性校验器（含指标/看板引用校验） | — |
 
 ## 示例场景
 
-示例用**一个完整的 RSI 改进循环**（目标维度：工具调用成功率）跨 `DATA`（数据团队）/ `MODEL`（模型团队）/ `AGENT`（Agent 平台团队）协作，完整展示：循环规格（Feature）→ 四类契约（轨迹事件 / 训练集 / 评测协议 / 模型服务）→ 五个场景（污染阻断、评测复现、champion 转正、熔断回滚、自提案治理）→ 三权分立 ADR / champion–challenger 模式 / 污染坑点 / 发布 Runbook / 能力卡的引用咬合关系，可作为试点第一周的填空范本。
+示例用**一个完整的 RSI 改进循环**（目标维度：工具调用成功率）跨 `DATA`（数据团队）/ `MODEL`（模型团队）/ `AGENT`（Agent 平台团队）协作，完整展示：循环规格（Feature）→ 循环四类契约（轨迹事件 / 训练集 / 评测协议 / 模型服务）+ 项目级三指标契约（数据开发 / 模型训练 / 飞轮健康）→ 八个场景（污染阻断、评测复现、champion 转正、熔断回滚、自提案治理、监控可信）→ 三权分立 ADR / champion–challenger 模式 / 污染坑点 / 发布 Runbook / 能力卡的引用咬合关系，可作为试点第一周的填空范本。

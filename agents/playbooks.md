@@ -1,4 +1,4 @@
-# Agent Playbooks — 三平面中的 7 个一等工作者（RSI 适配）
+# Agent Playbooks — 三平面中的 8 个一等工作者（RSI 适配）
 
 每个 playbook 是一份**任务书**：使命、触发、输入、步骤、输出、落盘、边界、失败兜底。流水线按此调度（见 `pipelines/ci/` 占位 job）；IDE 结对 Agent 也应以对应 playbook 为角色设定。
 
@@ -59,12 +59,20 @@
 ## 7. experiment-distiller（循环经验回流候选生成）
 
 - **触发**：三种回流事件——**循环 run 结束（无论成败）**、CR 关闭、事故复盘完成（P4/G5）。
-- **输入**：P3 证据报告与回归矩阵、实验跟踪记录、CR diff 与讨论、`check.py stats` 知识缺口报告。
+- **输入**：P3 证据报告与回归矩阵、**三层 profile 快照（批级/run 级/flywheel.json）**、实验跟踪记录、CR diff 与讨论、`check.py stats` 知识缺口报告。
 - **步骤**：抽取可泛化结论（**负结果优先**：哪条路不通、哪种 mix 无效、哪个口径有歧义）→ 查重 → 按 `templates/knowledge-item.md` 生成候选（`status: candidate, confidence: medium`）。
 - **输出**：`knowledge/<type>/` 新文件 draft PR，或建议合并进既有 ID 的评论。
 - **边界**：永不直接置 `accepted`；评测口径类候选一律路由 Eval Steward + 委员会，不得作为"下轮自动调参"的依据。
 
 ---
+
+## 8. profile-analyst（调优分析师）
+
+- **触发**：SLO 违例告警、循环收口（flywheel.json 生成后）、人工请托（"MFU 为什么掉了"）。
+- **输入**：三层 profile 快照、metric 契约（口径与 SLO）、历史 run 对比（按实验指纹索引）。
+- **步骤**：异常归因到平面/环节（数据批？训练配置？管道结构？）→ 生成调优候选清单，**按粒度路由**：参数级（附 A/B 或回放对比）→ 直接建议 + 指纹登记要求；口径级（SLO/def/mix 定义）→ draft CR；尺子级 → 只能提请委员会评估。
+- **输出**：归因报告（引用指标 ID 与快照路径，裸名禁止）+ 对应粒度的 draft PR / 评论。
+- **边界**：不执行任何调优动作；不得把"参数级建议"包装成"口径变更"绕 CR；连续两周期同一违例 → 自动升 pitfall 候选（与 #7 协作）。
 
 ## 运行台账与元指标
 

@@ -1,6 +1,6 @@
 # 契约（Contract）规范
 
-契约是 Spec 平面的**硬通货**：机器可读 JSON，人和 Agent 消费同一份。RSI 项目共五类：
+契约是 Spec 平面的**硬通货**：机器可读 JSON，人和 Agent 消费同一份。RSI 项目共六类：
 
 | kind | flavor（文件后缀） | 承载 | 一句话 |
 |---|---|---|---|
@@ -9,6 +9,7 @@
 | `api` | `.openapi.json` | 同步接口（如有） | 传统接口契约 |
 | `eval` | `.eval.json` | 评测协议：基准/指标/阈值/隔离 | **循环的裁判** |
 | `model` | `.model.json` | 模型服务契约：签名/预算/降级/失效清单 | 成品的说明书 |
+| `metric` | `.metric.json` | 指标契约：口径/单位/SLO/告警/采集点 | **循环的仪表盘刻度**（dashboard-as-code 的事实源） |
 
 ## 文件格式
 
@@ -24,7 +25,10 @@
 - `dataset`：`x-sla`（cadence / freshness_days / min_count）+ `x-quality`（≥1 条可执行断言，必须含污染审计条目）；
 - `eval`：`x-protocol`（benchmark / metrics / thresholds / isolation 四节齐全）；
 - `model`：`x-signature`（input/output）+ `x-budget` + `x-fallback`；
+- `metric`：`x-telemetry.collect`（发射点绑定）+ `x-telemetry.metrics[]`（每条必有 id/def/unit；无 `slo` 必须标 `informational: true`；指标 ID 全局唯一，跨契约重复即违反单一事实源）；
 - `event` / `api`：本体即标准 spec，无额外扩展。
+
+`metric` 契约与仪表盘联动：`observability/dashboards/*.board.json` 的面板与告警只能引用已注册指标 ID，check.py 自动校验（裸名指标禁止）。
 
 ## 变更规则速览
 
@@ -41,3 +45,6 @@
 | DS-TRAINMIX.v1 | dataset | DATA | MODEL | active |
 | EVAL-BENCH.v1 | eval | DATA | MODEL | active（approval: committee） |
 | MDL-SERVE.v1 | model | MODEL | AGENT | active |
+| DQ-QUALITY.v1 | metric | DATA | MODEL | active |
+| TRN-HEALTH.v1 | metric | MODEL | DATA | active |
+| FLY-CYCLE.v1 | metric | DATA | MODEL | active |

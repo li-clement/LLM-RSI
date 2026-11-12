@@ -39,6 +39,12 @@ jobs:
             exit 1
           fi
 
+      # 遥测义务：批级 profile 快照 + DQ-QUALITY 指标上报（缺任一批次无效）
+      - name: Emit batch profile & DQ telemetry
+        run: |
+          python3 -m quality_suite profile --snapshot reports/"${{ github.ref_name }}"/profile.json \
+            --emit-metrics-from .triplane/specs/contracts/DQ-QUALITY.v1.metric.json
+
       # 绿灯后发布数据集版本（版本号 + 契约版本指纹写进 manifest）
       - name: Publish dataset version
         if: success()

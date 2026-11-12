@@ -1,0 +1,27 @@
+{
+  "x-contract": {
+    "id": "FLY-CYCLE",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": ["MODEL"],
+    "compatibility": "backward",
+    "steward": "@eval-steward"
+  },
+  "x-telemetry": {
+    "collect": "循环收口时由 P3/P4 证据报告**重算**生成（禁止手填数字）；快照落 reports/<cycle>/flywheel.json，供 board 与 experiment-distiller 消费",
+    "metrics": [
+      { "id": "fly_recirculate_rate", "def": "轨迹 episode → 最终进入训练 mix 的样本转化率（按 episode 归因）", "unit": "ratio", "slo": ">= 0.45", "note": "飞轮的第一性指标：低于地板说明清洗管道或采样口径出了问题" },
+      { "id": "fly_cycle_lead_time_days", "def": "G2 冻结 → 新 champion 转正的天数", "unit": "days", "slo": "<= 21", "note": "取自流水线时间戳，不是人报" },
+      { "id": "fly_target_gain_pp", "def": "本轮 target 维度净增益（百分点），仅同 judge_version 口径可比", "unit": "percentage-point", "slo": ">= +3.0" },
+      { "id": "fly_regression_dims", "def": "guard 维度回归计数", "unit": "count", "slo": "== 0" },
+      { "id": "fly_contamination_incidents", "def": "冻结后确认的训练–评测泄漏事件数", "unit": "count/cycle", "slo": "== 0" },
+      { "id": "fly_respec_count", "def": "季度内评测指标/阈值变更 CR 数（换尺子观测）", "unit": "count/quarter", "informational": true, "note": "非零是常态，长期全零要警惕审计失效——治理心电图" },
+      { "id": "fly_cost_per_solve", "def": "线上每次成功任务平均成本（MDL-SERVE.x-budget 口径）", "unit": "CNY", "informational": true },
+      { "id": "fly_negative_result_published", "def": "本轮（含失败循环）被 Curator 处置的候选知识条数", "unit": "count/cycle", "slo": ">= 1", "note": "G5 回流门禁的量化形态" }
+    ]
+  },
+  "title": "数据飞轮健康指标契约",
+  "description": "飞轮 = 三平面闭环的运行时投影：回流率是燃料，净增益是转速，污染与换尺子是故障码。所有数字从证据重算，可审计到契约版本。"
+}

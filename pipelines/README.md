@@ -17,12 +17,15 @@ Execution 平面把"这一轮真的变好了吗"变成**可审计证据**。每�
 ### P2 团队开发流水线（两条，各团队自有仓库）
 
 **DATA 数据流水线**（[ci/data-ci.example.yml](ci/data-ci.example.yml)）：
-- 每个批次构建：契约场景直译的质量断言（去重率、污染计数、lineage 完备率、合成占比）——**断言即测试**，红灯批次不得发布版本号。
+- 每个批次构建：契约场景直译的质量断言（去重率、污染计数、lineage 完备率、合成占比）——**断言即测试**，红灯批次不得发布版本号；
+- **遥测义务**：批级 profile 快照 + `DQ-QUALITY` 指标上报（快照与上报缺一即批次无效）。
 
 **MODEL 训练流水线**（[ci/model-ci.example.yml](ci/model-ci.example.yml)）：
 - 训练配置必须引用 frozen 契约版本与具体数据集版本（禁止"读最新"）；
 - **污染预检**：训练 mix 对 holdout deny-list 的相似度自检（本地通道，P3 审计为终裁）；
-- 注册 challenger 时写入契约版本指纹。
+- **遥测义务**：run 级 `TRN-HEALTH` 指标自动上报 + 实验指纹登记（`trn_fingerprint_reg_rate == 1.0` 是硬门禁——没指纹的 run 不可比，G3 拒收）。
+
+三层监控、dashboard-as-code 与调优工作流的完整设计见 [observability/README.md](../observability/README.md)。
 
 两个团队共同的跨平面义务：MR 引用知识项 ID 或显式 `knowledge: none`；涉及契约实现变更时自动注入相关 pitfall 清单给评审者与结对 Agent。
 

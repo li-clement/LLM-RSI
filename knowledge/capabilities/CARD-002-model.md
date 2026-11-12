@@ -9,8 +9,8 @@ status: accepted
 owner: "@zhao-qi"
 provenance: [能力盘点-2026-Q4]
 expires: 2027-02-15
-provides: [TRJ-ROLLOUT.v1, MDL-SERVE.v1]
-consumes: [DS-TRAINMIX.v1, EVAL-BENCH.v1]
+provides: [TRJ-ROLLOUT.v1, MDL-SERVE.v1, TRN-HEALTH.v1]
+consumes: [DS-TRAINMIX.v1, EVAL-BENCH.v1, DQ-QUALITY.v1, FLY-CYCLE.v1]
 contact: "#model-rsi-oncall"
 ---
 
@@ -20,7 +20,8 @@ contact: "#model-rsi-oncall"
 
 - 训练管道与 challenger 产出（训练配置必须引用 frozen 契约版本）；
 - serving 侧轨迹埋点与合规发布（脱敏 + judge_version 绑定，S-002）；
-- 模型注册表与 champion 热备管理（PAT-001 第 4/5 步的执行方）。
+- 模型注册表与 champion 热备管理（PAT-001 第 4/5 步的执行方）；
+- 训练健康指标契约（TRN-HEALTH）的定义与采集实现（`trainkit` hooks）。
 
 ## 边界与非目标
 

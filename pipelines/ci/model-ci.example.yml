@@ -35,6 +35,12 @@ jobs:
             --trace-contract TRJ-ROLLOUT.v1 \
             --fingerprint-from .triplane/specs/contracts
 
+      # 遥测义务：run 级 TRN-HEALTH 上报 + 实验指纹（trn_fingerprint_reg_rate == 1.0 硬门禁）
+      - name: Emit run profile & TRN telemetry
+        run: |
+          python3 -m trainkit telemetry emit --metrics-spec .triplane/specs/contracts/TRN-HEALTH.v1.metric.json \
+            --snapshot model-registry/"$RUN_ID"/profile.json --fail-if-unregistered-fingerprint
+
       # scenario-forge / test-weaver 触发器：契约场景缺实现时 Agent 开 draft PR
       agent-test-weaver:
         runs-on: ubuntu-latest

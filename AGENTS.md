@@ -11,7 +11,7 @@ owner: rsi-governance-committee
 
 ## 1. 你在哪个模式里
 
-三平面协同模式（见 [MODE.md](MODE.md)，RSI 适配）：Spec 平面承载意图与契约（五类：dataset/event/api/eval/model），Knowledge 平面承载经验与决策（含**负结果**），Execution 平面承载证据。三个平面通过 **ID 引用**咬合，通过 `tools/check.py` 校验一致性。
+三平面协同模式（见 [MODE.md](MODE.md)，RSI 适配）：Spec 平面承载意图与契约（六类：dataset/event/api/eval/model/**metric**），Knowledge 平面承载经验与决策（含**负结果**），Execution 平面承载证据（含可观测子系统）。三个平面通过 **ID 引用**咬合，通过 `tools/check.py` 校验一致性。
 
 **RSI 项目的特别约定：改进循环自身（模型生成的 mix 提案、训练补丁、接口变更草稿）也是一个 Agent**——同等受本文件三闸门约束，provenance 标注 `model:<version>@<episode>`。允许递归，禁止换尺子。
 
@@ -49,7 +49,7 @@ owner: rsi-governance-committee
 | 候选知识 | `knowledge/<type>/` | frontmatter `status: candidate` |
 | 分析报告 | PR 评论 / `pipelines/` 产物目录 | 必须引用被分析工件的 ID |
 
-所有 markdown 工件必须带 frontmatter 元数据（模板见 [templates/](templates/)），否则 `check.py` 会拒绝合并。
+所有 markdown 工件必须带 frontmatter 元数据（模板见 [templates/](templates/)），否则 `check.py` 会拒绝合并。报告中引用监控数字必须解析到 `*.metric.json` 契约的指标 ID，**裸名指标禁止**；仪表盘面板只能引用已注册指标（`observability/dashboards/` 由 check.py 校验）。
 
 ## 6. 术语以谁为准
 

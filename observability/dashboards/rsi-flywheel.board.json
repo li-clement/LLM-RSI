@@ -1,0 +1,45 @@
+{
+  "boardId": "rsi-flywheel",
+  "title": "RSI 飞轮健康总览（dashboard-as-code：面板只准引用指标契约 ID）",
+  "refresh": "5m",
+  "retention_days": 90,
+  "rows": [
+    {
+      "row": "数据开发 · P2-DATA",
+      "panels": [
+        { "panelId": "freshness", "title": "批次新鲜度（SLO 7d）", "metric": "dq_freshness_lag_days", "source": "DQ-QUALITY.v1", "viz": "timeseries" },
+        { "panelId": "leak", "title": "污染审计搬运值（红线 0）", "metric": "dq_eval_leak_count", "source": "DQ-QUALITY.v1", "viz": "stat" },
+        { "panelId": "dedup", "title": "去重率", "metric": "dq_dedup_rate", "source": "DQ-QUALITY.v1", "viz": "timeseries" },
+        { "panelId": "composition", "title": "mix 构成（human/rollout/distilled/synthetic）", "metric": "dq_mix_composition", "source": "DQ-QUALITY.v1", "viz": "stacked" },
+        { "panelId": "jobs", "title": "管道作业成功率", "metric": "dq_job_success_rate", "source": "DQ-QUALITY.v1", "viz": "gauge" }
+      ]
+    },
+    {
+      "row": "模型训练 · P2-MODEL",
+      "panels": [
+        { "panelId": "mfu", "title": "算力利用率 MFU（SLO 0.45）", "metric": "trn_mfu", "source": "TRN-HEALTH.v1", "viz": "gauge" },
+        { "panelId": "spike", "title": "loss 尖峰事件", "metric": "trn_loss_spike_events", "source": "TRN-HEALTH.v1", "viz": "bar" },
+        { "panelId": "kl", "title": "KL 漂移（过优化前兆）", "metric": "trn_kl_drift", "source": "TRN-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "hack", "title": "reward hacking 探测", "metric": "trn_reward_hacking_flags", "source": "TRN-HEALTH.v1", "viz": "stat" },
+        { "panelId": "fingerprint", "title": "实验指纹登记完备率", "metric": "trn_fingerprint_reg_rate", "source": "TRN-HEALTH.v1", "viz": "stat" }
+      ]
+    },
+    {
+      "row": "数据飞轮 · E-001（循环收口重算）",
+      "panels": [
+        { "panelId": "recirc", "title": "回流转化率（飞轮第一性指标）", "metric": "fly_recirculate_rate", "source": "FLY-CYCLE.v1", "viz": "timeseries" },
+        { "panelId": "gain", "title": "每轮净增益（同 judge 口径）", "metric": "fly_target_gain_pp", "source": "FLY-CYCLE.v1", "viz": "bar" },
+        { "panelId": "leadtime", "title": "循环前置时间 G2→转正", "metric": "fly_cycle_lead_time_days", "source": "FLY-CYCLE.v1", "viz": "timeseries" },
+        { "panelId": "respec", "title": "换尺子观测（长期为 0 要警惕）", "metric": "fly_respec_count", "source": "FLY-CYCLE.v1", "viz": "stat" },
+        { "panelId": "negres", "title": "负结果处置数（G5）", "metric": "fly_negative_result_published", "source": "FLY-CYCLE.v1", "viz": "stat" }
+      ]
+    }
+  ],
+  "alerts": [
+    { "on": "dq_eval_leak_count>0", "route": "#data-rsi-oncall", "gate": "G3 阻断本轮循环" },
+    { "on": "dq_freshness_lag_days>10", "route": "#data-rsi-oncall", "gate": "批次红灯预警" },
+    { "on": "trn_reward_hacking_flags>0", "route": "#model-rsi-oncall", "gate": "run 禁入 shadow" },
+    { "on": "trn_kl_drift>0.15", "route": "#eval-steward", "gate": "guard 维度加测" },
+    { "on": "fly_contamination_incidents>0", "route": "rsi-governance-committee", "gate": "循环冻结 + 事故流程" }
+  ]
+}

@@ -15,7 +15,7 @@ TriPlane 把协同的三种核心资产拆到三个独立版本化、通过 ID �
 
 | 平面 | 回答的问题 | 核心工件 | RSI 里的对应物 |
 |---|---|---|---|
-| **Spec 平面** | 这一轮改进要共同交付什么？边界在哪？ | Epic → Feature（循环规格）→ Contract → Scenario | 数据集契约、轨迹事件契约、评测协议契约、模型服务契约 |
+| **Spec 平面** | 这一轮改进要共同交付什么？边界在哪？ | Epic → Feature（循环规格）→ Contract → Scenario | 数据集契约、轨迹事件契约、评测协议契约、模型服务契约、**指标契约（telemetry）** |
 | **Knowledge 平面** | 我们知道什么？哪些路试过不通？ | 术语表 / 能力卡 / ADR / 模式 / 坑点 / Runbook | 失败案例、mix 配比经验、判分口径裁定、实验结论 |
 | **Execution 平面** | "变好了"的证据在哪？ | 四流水线 + 五门禁 | 污染审计、评测复现、数据质量断言、champion/challenger 灰度 |
 
@@ -57,7 +57,7 @@ Epic（改进方向，如"工具调用能力闭环"）
        └─ Scenario（acceptance 端到端验收 / contract 契约断言）
 ```
 
-### 3.2 五类契约
+### 3.2 六类契约
 
 | kind | flavor | 承载 | 必填扩展（check.py 强制） |
 |---|---|---|---|
@@ -66,6 +66,9 @@ Epic（改进方向，如"工具调用能力闭环"）
 | `api` | `.openapi.json` | 同步服务接口（如有） | 标准 openapi 本体 |
 | `eval` | `.eval.json` | **评测协议**：基准、指标定义、阈值、隔离规则 | `x-protocol`（benchmark / metrics / thresholds / isolation）+ `x-contract.approval: committee` |
 | `model` | `.model.json` | 模型服务契约：接口签名、预算、降级、已知失效清单 | `x-signature`、`x-budget`、`x-fallback` |
+| `metric` | `.metric.json` | **指标契约**：数据开发/训练/飞轮的口径、单位、SLO、告警路由、采集点 | `x-telemetry`（collect 发射点 + metrics 列表；无 SLO 必标 informational；ID 全局唯一） |
+
+`metric` 与 `eval` 的分工要拎清：**eval 契约是裁判**（决定 challenger 转正），**metric 契约是体检仪表**（运维与调优读数是它的投影）。裁判阈值不放在 metric 里，仪表口径不进裁判——防"看着仪表盘改裁判"的滑坡。
 
 ### 3.3 状态机与冻结点
 
@@ -118,6 +121,16 @@ G1 三平面校验绿   → G2 契约冻结      → G3 收敛全绿            
 
 **G3 是 RSI 的生命线**：三条硬条件——① 污染审计泄漏计数 = 0；② 评测双跑复现偏差 ≤ 阈值（可复现才可比）；③ 全部契约场景 + 验收场景 100% 通过。任一不满足，本轮循环记为"未完成"，challenger 不得进 KB。
 
+### 可观测与 Profiling 子系统（Execution 的神经系统）
+
+监控不另立平面，而是三平面机制在观测域的投影，设计文档见 [observability/README.md](observability/README.md)：
+
+- **指标即契约**：数据开发（`DQ-QUALITY`）、模型训练（`TRN-HEALTH`）、数据飞轮（`FLY-CYCLE`）三层指标全部先在 Spec 平面定义（第六类契约），再实现采集——看板、告警、报告只准引用指标 ID，**裸名指标禁止**（check.py 校验 board 引用）。
+- **Dashboard-as-code**：仪表盘是 metric 契约的声明式投影（`observability/dashboards/*.board.json`），面板↔契约不一致 CI 即红；渲染工具（Grafana 类）随便换。
+- **告警 = 门禁信号**：SLO 违例直接进 G3/G5 证据或触发熔断（如 `dq_eval_leak_count > 0` 阻断循环），路由取自能力卡。
+- **Profile 快照即证据**：批级 / run 级 / 循环级三层快照落 `reports/`，保留 ≥90 天；循环收口重算 `flywheel.json`，是下一轮 S1 立靶的**法定输入**——目标从数据来，不从会议室来。
+- **调优三闸门**（[observability/profiling.md](observability/profiling.md)）：参数级自由但必须登记实验指纹（数据集版本 + 协议版本 + 配置哈希）；口径级走 CR；尺子级只有委员会。没指纹的调优 = 没调优（不可比）。
+
 ---
 
 ## 6. 角色与治理（三权分立）
@@ -157,6 +170,8 @@ G1 三平面校验绿   → G2 契约冻结      → G3 收敛全绿            
 ---
 
 ## 8. 指标体系：度量循环的可信度，不度量算力
+
+本节是**治理层 KPI**；它们的机器可读定义就是 metric 契约（`FLY-CYCLE` 等）——同一指标只有一个源，stats 报表与仪表盘是它的两个视图。
 
 | 指标 | 定义 | 目标 | 采集 |
 |---|---|---|---|
@@ -200,12 +215,13 @@ G1 三平面校验绿   → G2 契约冻结      → G3 收敛全绿            
 ```
 ├── MODE.md                  ← 本文
 ├── AGENTS.md                ← Agent/自提案一等公民入口与三闸门
-├── specs/                   ← Spec 平面：五类契约规则 + RSI 循环示例链
+├── specs/                   ← Spec 平面：六类契约规则 + RSI 循环示例链
 ├── knowledge/               ← Knowledge 平面：六类资产 + DATA/MODEL/AGENT 能力卡
 ├── pipelines/               ← Execution 平面：四流水线（含 P3 评测收敛）+ CI 示例
-├── agents/                  ← 7 个 playbook（含 experiment-distiller 实验回流）
-├── templates/               ← 六类工件模板
-└── tools/check.py           ← 三平面一致性校验器（G1，纯 stdlib）
+├── observability/           ← 神经系统：监控体系 + 三层 profiling 调优 + dashboard-as-code
+├── agents/                  ← 8 个 playbook（含 profile-analyst 调优分析、experiment-distiller 回流）
+├── templates/               ← 七类工件模板（含 metric 契约）
+└── tools/check.py           ← 三平面一致性校验器（G1，纯 stdlib，含指标/看板引用校验）
 ```
 
-示例链是本项目的一个真实形态循环：[E-001 RSI 最小改进循环](specs/epics/E-001-rsi-minimum-loop.md) → [F-2026-001 一个完整改进循环](specs/features/F-2026-001-one-improvement-cycle.md) → 四契约（[TRJ-ROLLOUT](specs/contracts/TRJ-ROLLOUT.v1.asyncapi.json) / [DS-TRAINMIX](specs/contracts/DS-TRAINMIX.v1.schema.json) / [EVAL-BENCH](specs/contracts/EVAL-BENCH.v1.eval.json) / [MDL-SERVE](specs/contracts/MDL-SERVE.v1.model.json)）→ 五场景 → [ADR-0001 三权分立](knowledge/decisions/ADR-0001-eval-authority-separation.md) 等知识闭环。
+示例链是本项目的一个真实形态循环：[E-001 RSI 最小改进循环](specs/epics/E-001-rsi-minimum-loop.md) → [F-2026-001 一个完整改进循环](specs/features/F-2026-001-one-improvement-cycle.md) → 循环四契约（[TRJ-ROLLOUT](specs/contracts/TRJ-ROLLOUT.v1.asyncapi.json) / [DS-TRAINMIX](specs/contracts/DS-TRAINMIX.v1.schema.json) / [EVAL-BENCH](specs/contracts/EVAL-BENCH.v1.eval.json) / [MDL-SERVE](specs/contracts/MDL-SERVE.v1.model.json)）+ 项目级三指标契约（[DQ-QUALITY](specs/contracts/DQ-QUALITY.v1.metric.json) / [TRN-HEALTH](specs/contracts/TRN-HEALTH.v1.metric.json) / [FLY-CYCLE](specs/contracts/FLY-CYCLE.v1.metric.json)）→ 八场景 → [ADR-0001 三权分立](knowledge/decisions/ADR-0001-eval-authority-separation.md) 等知识闭环。
