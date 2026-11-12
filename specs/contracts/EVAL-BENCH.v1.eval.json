@@ -49,7 +49,7 @@
       "reproducibility_gap": "<= 0.3pp"
     },
     "isolation": [
-      "holdout 及其任何衍生（改写、蒸馏、合成同题）不得进入训练 mix：DS-TRAINMIX.x-quality 的 eval_leak_count==0 由 P3 审计机器执行（n-gram + embedding 相似度双通道）",
+      "holdout 及其任何衍生（改写、蒸馏、合成同题）不得进入训练 mix：CORP-PRETRAIN / SFT-PAIRS x-quality 的 eval_leak_count==0 由 P3 审计机器执行（n-gram + embedding 相似度双通道）",
       "评测题生成与判分器维护均在 DATA；MODEL 不得建立私下评测集（ADR-0001）",
       "本文件 metrics 与 thresholds 的任何变更一律按破坏性处理，仅治理委员会可批"
     ]

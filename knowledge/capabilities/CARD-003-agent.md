@@ -9,8 +9,8 @@ status: accepted
 owner: "@sun-lei"
 provenance: [能力盘点-2026-Q4]
 expires: 2027-02-15
-provides: []
-consumes: [MDL-SERVE.v1]
+provides: [SRC-INGEST.v1, FLY-FEEDBACK.v1, RAG-HEALTH.v1]
+consumes: [MDL-SERVE.v1, MDL-CKPT.v1, RAG-DOCS.v1, RAG-RETRIEVE.v1]
 contact: "#agent-platform-oncall"
 ---
 

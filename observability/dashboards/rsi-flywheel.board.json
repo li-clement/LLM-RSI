@@ -25,6 +25,16 @@
       ]
     },
     {
+      "row": "RAG 在线 · P2-AGENT",
+      "panels": [
+        { "panelId": "rag_hit", "title": "检索命中率 top-k", "metric": "rag_hit_rate", "source": "RAG-HEALTH.v1", "viz": "gauge" },
+        { "panelId": "rag_skew", "title": "版本歪斜探针（红线 0）", "metric": "rag_version_skew_events", "source": "RAG-HEALTH.v1", "viz": "stat" },
+        { "panelId": "rag_stale", "title": "过期引用率", "metric": "rag_stale_citation_rate", "source": "RAG-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "rag_gap", "title": "空检索率（语料缺口信号）", "metric": "rag_empty_retrieval_rate", "source": "RAG-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "rag_edit", "title": "edit/regenerate 触发率", "metric": "rag_feedback_edit_rate", "source": "RAG-HEALTH.v1", "viz": "timeseries" }
+      ]
+    },
+    {
       "row": "数据飞轮 · E-001（循环收口重算）",
       "panels": [
         { "panelId": "recirc", "title": "回流转化率（飞轮第一性指标）", "metric": "fly_recirculate_rate", "source": "FLY-CYCLE.v1", "viz": "timeseries" },
@@ -40,6 +50,8 @@
     { "on": "dq_freshness_lag_days>10", "route": "#data-rsi-oncall", "gate": "批次红灯预警" },
     { "on": "trn_reward_hacking_flags>0", "route": "#model-rsi-oncall", "gate": "run 禁入 shadow" },
     { "on": "trn_kl_drift>0.15", "route": "#eval-steward", "gate": "guard 维度加测" },
+    { "on": "rag_version_skew_events>0", "route": "#agent-rsi-oncall", "gate": "PIT-003 排查清单，先版本对账再谈回滚" },
+    { "on": "rag_stale_citation_rate>0.04", "route": "#data-rsi-oncall", "gate": "语料管道整改工单" },
     { "on": "fly_contamination_incidents>0", "route": "rsi-governance-committee", "gate": "循环冻结 + 事故流程" }
   ]
 }

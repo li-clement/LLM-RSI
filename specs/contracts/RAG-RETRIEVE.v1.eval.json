@@ -1,0 +1,42 @@
+{
+  "x-contract": {
+    "id": "RAG-RETRIEVE",
+    "kind": "eval",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": ["AGENT"],
+    "compatibility": "bidirectional",
+    "steward": "@eval-steward",
+    "approval": "committee"
+  },
+  "x-protocol": {
+    "benchmark": {
+      "ref": "model-registry.rsi.internal/eval/rag-probe-v1",
+      "probe_size_min": 1200,
+      "rotation_days": 45,
+      "note": "探针题集：检索真值 + 时效题（valid_through 边界）+ 拒答题（库中无答案）"
+    },
+    "metrics": [
+      { "id": "rag_recall_at_k", "def": "探针题在 k=8 内命中真值文档的比例（按题难度分层）", "direction": "up" },
+      { "id": "rag_groundedness", "def": "生成答案的 claim 被引用文档支持的比例（claim-level judge，版本 pin）", "direction": "up" },
+      { "id": "rag_citation_validity", "def": "引用链接有效且确实支持对应 claim 的比例", "direction": "up" },
+      { "id": "rag_stale_answer_rate", "def": "引用过期文档（超过 valid_through）作答的比例", "direction": "down" },
+      { "id": "rag_abstain_correctness", "def": "库中无答案时正确拒答/声明不足的比例", "direction": "up" }
+    ],
+    "thresholds": {
+      "rag_recall_at_k": ">= 0.90",
+      "rag_groundedness": ">= 0.95",
+      "rag_citation_validity": ">= 0.97",
+      "rag_stale_answer_rate": "<= 0.03",
+      "rag_abstain_correctness": ">= 0.90"
+    },
+    "isolation": [
+      "探针题与真值文档不进入 CORP-PRETRAIN / SFT-PAIRS 训练通道；RAG 语料与探针题集物理隔离（同一 embedding 空间下的相似度审计）",
+      "embedding 换版或 chunking 策略变更 = 破坏性：全量重建索引 + 本协议重跑后才准切换（PIT-003 三角歪斜防线）",
+      "阈值与口径变更仅委员会（RES-）"
+    ]
+  },
+  "title": "RAG 检索与生成质量评测协议契约（RAG 的裁判）",
+  "description": "RAG 不是模型属性也不是数据属性，是 语料×索引×模型 的系统属性——评测必须按系统口径定义，任何一角单独调优都可能只是歪斜（见 PIT-003）。"
+}

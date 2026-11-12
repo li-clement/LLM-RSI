@@ -4,7 +4,7 @@
 
 ## 0. 30 秒版
 
-1. 冷启动：先填**能力卡 + 术语表**，再把**现有评测口径**誊成 `EVAL-BENCH` 草案——这三样决定一切。
+1. 冷启动：先填**能力卡 + 术语表**，再把**现有评测口径**誊成 `EVAL-BENCH` 草案——这三样决定一切。你在生命周期哪个环节（采集/CORP/SFT/RL/RAG/飞轮 × 预训练/中训练/后训练）？查[场景化契约族地图](specs/contracts/README.md)。
 2. 日常：跨团队说"好"之前，先让 `python3 tools/check.py` 说"绿"。
 3. 铁律：契约 frozen 后只能走 CR；评测阈值只有委员会能改；Agent 与 RSI 自提案只能起草不能批准。
 
@@ -124,7 +124,7 @@ python3 tools/check.py --strict && echo "空骨架也守规矩：G1 ✅"
 python3 tools/check.py            # lint，默认模式
 python3 tools/check.py --strict   # G1：警告也算失败（CI 用这个）
 python3 tools/check.py stats      # 健康度：覆盖率/新鲜度/未消费知识/指标注册数
-python3 tools/check.py stats --changed "specs/contracts/DS-TRAINMIX.v1.schema.json"
+python3 tools/check.py stats --changed "specs/contracts/SFT-PAIRS.v1.schema.json"
                                   # 变更关联分析：契约场景 + 消费方
 ```
 

@@ -1,0 +1,27 @@
+{
+  "x-contract": {
+    "id": "PRE-HEALTH",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@pretrain-steward"
+  },
+  "x-telemetry": {
+    "collect": "预训练 run 的 trainkit hooks 实时上报；ckpt 交接时快照写进 MDL-CKPT.x-lineage.metric_snapshot_refs（reports/<run>/pre-profile.json）",
+    "metrics": [
+      { "id": "pre_loss_zscore", "def": "滑动窗口 loss 异常度（|z|>4 记事件）", "unit": "ratio", "slo": "<= 4", "alert": "crit@6" },
+      { "id": "pre_mfu", "def": "Model FLOPs Utilization（预训练集群口径）", "unit": "ratio", "slo": ">= 0.42", "alert": "warn@0.42 crit@0.30" },
+      { "id": "pre_restart_loss_events", "def": "重启/抢占导致的 loss 不连续事件数", "unit": "count/run", "informational": true, "note": "配合 resume_integrity 归因" },
+      { "id": "pre_ckpt_resume_integrity", "def": "按 PAT-003 位置回放后 loss 曲线连续性的验证通过率", "unit": "ratio", "slo": "== 1.0", "note": "恢复演练（RB-002）每次实跑" },
+      { "id": "pre_data_position_reg_rate", "def": "run 登记消费位置指纹（batch 顺序哈希）的比例", "unit": "ratio", "slo": "== 1.0", "binds": "MDL-CKPT.v1.x-lineage[consumption_position]" },
+      { "id": "pre_tokenizer_fingerprint_match", "def": "run 的 tokenizer 指纹与 CORP-PRETRAIN 批次口径一致率", "unit": "ratio", "slo": "== 1.0" },
+      { "id": "pre_curriculum_adherence", "def": "实际数据消费顺序与声明 curriculum 的偏差（违规 batch 数）", "unit": "count", "slo": "== 0", "note": "curriculum 是口径：顺序即契约（PAT-003）" },
+      { "id": "pre_throughput_tokens_hr", "def": "有效 token 吞吐（扣除回滚段）", "unit": "tokens/hr", "informational": true }
+    ]
+  },
+  "title": "预训练健康指标契约",
+  "description": "预训练是长周期高成本阶段：健康画像的重心在可续跑性（位置回放）、口径一致（tokenizer/mix/curriculum）与异常归因（重启损耗）。调优只引用本文件 ID。"
+}

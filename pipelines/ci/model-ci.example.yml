@@ -6,7 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      dataset_version: { description: "DS-TRAINMIX 批次版本", required: true }
+      dataset_version: { description: "CORP-PRETRAIN / SFT-PAIRS 批次版本清单", required: true }
 
 jobs:
   contract-pin-gate:
@@ -18,7 +18,7 @@ jobs:
       - name: Verify frozen contract pins
         run: |
           git clone --depth 1 https://git.internal/triplane-rsi.git .triplane
-          python3 .triplane/tools/check.py stats --changed "specs/contracts/DS-TRAINMIX.v1.schema.json"
+          python3 .triplane/tools/check.py stats --changed "specs/contracts/SFT-PAIRS.v1.schema.json"
           # 占位：比对 train_config.yaml 中的 contracts: 段与 Spec 仓库 frozen 指纹
           python3 -m trainkit verify-pins --config train_config.yaml --spec .triplane/specs
 

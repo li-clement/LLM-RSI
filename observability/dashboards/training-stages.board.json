@@ -1,0 +1,42 @@
+{
+  "boardId": "training-stages",
+  "title": "模型训练三段健康（预训练/中训练/后训练——阶段间用 fingerprint 串联）",
+  "refresh": "10m",
+  "retention_days": 90,
+  "rows": [
+    {
+      "row": "预训练 · PRE-HEALTH",
+      "panels": [
+        { "panelId": "pre_loss", "title": "loss 异常度 z-score", "metric": "pre_loss_zscore", "source": "PRE-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "pre_mfu", "title": "预训练 MFU（SLO 0.42）", "metric": "pre_mfu", "source": "PRE-HEALTH.v1", "viz": "gauge" },
+        { "panelId": "pre_resume", "title": "位置回放完整性（红线 1.0）", "metric": "pre_ckpt_resume_integrity", "source": "PRE-HEALTH.v1", "viz": "stat" },
+        { "panelId": "pre_curric", "title": "curriculum 违规 batch（红线 0）", "metric": "pre_curriculum_adherence", "source": "PRE-HEALTH.v1", "viz": "stat" },
+        { "panelId": "pre_pos", "title": "消费位置登记完备率", "metric": "pre_data_position_reg_rate", "source": "PRE-HEALTH.v1", "viz": "stat" }
+      ]
+    },
+    {
+      "row": "中训练 · MID-HEALTH",
+      "panels": [
+        { "panelId": "mid_needle", "title": "needle 召回（分 ctx 桶）", "metric": "mid_needle_recall_by_ctx", "source": "MID-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "mid_curric", "title": "长度课程偏差 PSI", "metric": "mid_ctx_curriculum_adherence", "source": "MID-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "mid_scheme", "title": "位置方案登记率（红线 1.0）", "metric": "mid_position_scheme_reg_rate", "source": "MID-HEALTH.v1", "viz": "stat" },
+        { "panelId": "mid_keep", "title": "短 ctx 能力保持", "metric": "mid_shortctx_regression", "source": "MID-HEALTH.v1", "viz": "stat" }
+      ]
+    },
+    {
+      "row": "后训练 / RL · TRN-HEALTH",
+      "panels": [
+        { "panelId": "post_disagree", "title": "verifier 分歧率（PIT-002 探针）", "metric": "trn_rl_verifier_disagreement_rate", "source": "TRN-HEALTH.v1", "viz": "timeseries" },
+        { "panelId": "post_collapse", "title": "advantage 塌缩事件", "metric": "trn_rl_advantage_collapse_events", "source": "TRN-HEALTH.v1", "viz": "stat" },
+        { "panelId": "post_kl", "title": "KL 漂移", "metric": "trn_kl_drift", "source": "TRN-HEALTH.v1", "viz": "timeseries" }
+      ]
+    }
+  ],
+  "alerts": [
+    { "on": "pre_loss_zscore>4", "route": "#model-rsi-oncall", "gate": "RB-002 流程，loss 事件必须归因" },
+    { "on": "pre_data_position_reg_rate<1.0", "route": "#model-rsi-oncall", "gate": "G3 拒收该 run（不可复现）" },
+    { "on": "mid_position_scheme_reg_rate<1.0", "route": "#model-rsi-oncall", "gate": "ckpt 交接无效" },
+    { "on": "trn_rl_verifier_disagreement_rate>0.05", "route": "#eval-steward", "gate": "S-014 #5：升 pitfall 候选" },
+    { "on": "trn_rl_advantage_collapse_events>0", "route": "#model-rsi-oncall", "gate": "run 暂停待归因" }
+  ]
+}

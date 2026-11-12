@@ -18,9 +18,11 @@
       { "id": "trn_grad_norm_p99", "def": "梯度范数 P99", "unit": "ratio", "informational": true },
       { "id": "trn_kl_drift", "def": "challenger 对 champion 策略的 KL 漂移（proxy 估计）", "unit": "nats", "slo": "<= 0.15", "note": "过大 = 过优化/Goodhart 前兆，触发 guard 维度加测" },
       { "id": "trn_reward_hacking_flags", "def": "判分异常模式标记数（同模板高分簇、judge 分歧率突增）", "unit": "count/run", "slo": "== 0" },
-      { "id": "trn_fingerprint_reg_rate", "def": "run 注册了契约版本指纹（数据集+评测协议+轨迹契约）的比例", "unit": "ratio", "slo": "== 1.0", "note": "缺指纹的 run 判不可比，G3 直接拒收" }
+      { "id": "trn_rl_verifier_disagreement_rate", "def": "RL-VERIFIER 判定与独立复核 judge 的分歧率（在线版）", "unit": "ratio", "slo": "<= 0.05", "binds": "RL-VERIFIER.v1.x-protocol[verifier_disagreement_rate]" },
+      { "id": "trn_rl_advantage_collapse_events", "def": "组内 advantage 方差塌缩事件数（reward hacking / 熵坍缩前兆）", "unit": "count/run", "slo": "== 0" },
+      { "id": "trn_fingerprint_reg_rate", "def": "run 注册了契约版本指纹（数据集+评测协议+checkpoint lineage）的比例", "unit": "ratio", "slo": "== 1.0", "note": "缺指纹的 run 判不可比，G3 直接拒收" }
     ]
   },
-  "title": "模型训练健康画像指标契约",
-  "description": "训练过程 profiling 与调优的指标定义源。run 级与循环级调优只引用本文件 ID；口径变更走 CR，SLO 变更需 DATA 侧（评测可比性受影响）。"
+  "title": "训练健康指标契约（后训练 / RL / 对齐阶段）",
+  "description": "后训练与 RL run 的过程画像与调优读数源：健康、过优化探测、指纹完备性。预训练/中训练专属指标在 PRE-HEALTH / MID-HEALTH。口径变更走 CR；影响评测可比性的（judge/KL 估计器换版）需 DATA 侧 Steward 会签。"
 }

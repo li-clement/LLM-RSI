@@ -15,10 +15,10 @@ runner: "p3-convergence/loop-suite"
 Feature: 一个完整的改进循环（F-2026-001）
 
   Background:
-    Given 本轮循环的四个契约按 frozen_at 时点版本装配（TRJ-ROLLOUT.v1 / DS-TRAINMIX.v1 / EVAL-BENCH.v1 / MDL-SERVE.v1）
+    Given 本轮循环的八个循环契约按 frozen_at 时点版本装配（TRJ-ROLLOUT.v1 / SFT-PAIRS.v1 / RL-ROLLOUT.v1 / RL-VERIFIER.v1 / EVAL-BENCH.v1 / POST-EVAL.v1 / MDL-CKPT.v1 / MDL-SERVE.v1）
 
   Scenario: 正常循环——挑战者转正
-    When DATA 按 DS-TRAINMIX.v1 交付本周训练集版本
+    When DATA 按 SFT-PAIRS.v1 交付本周后训练样本版本
     And MODEL 基于该版本产出 challenger 并注册
     Then P3 污染审计 eval_leak_count == 0
     And 按 EVAL-BENCH.v1 双跑评测，reproducibility_gap <= 0.3pp

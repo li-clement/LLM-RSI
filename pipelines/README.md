@@ -56,7 +56,7 @@ Execution 平面把"这一轮真的变好了吗"变成**可审计证据**。每�
 | 用途 | 示例工具 | 备注 |
 |---|---|---|
 | 三平面一致性 | `tools/check.py`（自带） | 纯 stdlib，任意 CI |
-| 数据集质量断言 | pandera / Great Expectations | S-003 断言直译 |
+| 数据集质量断言 | pandera / Great Expectations | S-009/S-010/S-011/S-012 断言直译 |
 | schema 兼容性 | json-schema-diff / oasdiff | **工具结论优先于人** |
 | 污染审计 | n-gram（MinHash）+ embedding ANN | P3 双通道，deny-list 只在 DATA 侧 |
 | 评测执行 | 自有 harness + 实验跟踪（MLflow/W&B 类） | run_id 与契约版本指纹入报告 |

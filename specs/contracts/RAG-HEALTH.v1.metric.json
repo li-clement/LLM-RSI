@@ -1,0 +1,27 @@
+{
+  "x-contract": {
+    "id": "RAG-HEALTH",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "AGENT",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@front-steward"
+  },
+  "x-telemetry": {
+    "collect": "Agent 检索服务每次查询记录（含命中 doc_id / 来源 / 引用有效性），写 metrics-store；在线质量与离线 RAG-RETRIEVE 双轨对照；快照 reports/<cycle>/rag-health.json",
+    "metrics": [
+      { "id": "rag_hit_rate", "def": "线上查询在 top-k 内命中被引用文档的比例", "unit": "ratio", "slo": ">= 0.85" },
+      { "id": "rag_freshness_p90_hours", "def": "被引用文档的新鲜度 P90（indexed_at 距今）", "unit": "hours", "slo": "<= 48", "binds": "RAG-DOCS.v1.x-quality[index_freshness_hours]" },
+      { "id": "rag_citation_valid_rate", "def": "线上引用可解析且支持断言的比例（与 RAG-RETRIEVE.rag_citation_validity 同口径在线版）", "unit": "ratio", "slo": ">= 0.96" },
+      { "id": "rag_stale_citation_rate", "def": "引用已过 valid_through 文档的比例", "unit": "ratio", "slo": "<= 0.04" },
+      { "id": "rag_version_skew_events", "def": "查询向量版本与索引 embedding 版本不一致的探测事件数（抽样对账）", "unit": "count", "slo": "== 0", "binds": "RAG-DOCS.v1.x-quality[embedding_version_consistent]", "note": "PIT-003 三角歪斜的在线探针" },
+      { "id": "rag_empty_retrieval_rate", "def": "检索为空/低置信的比例（升 = 语料缺口信号，喂飞轮）", "unit": "ratio", "informational": true },
+      { "id": "rag_feedback_edit_rate", "def": "RAG 回答触发用户 edit/regenerate 的比率（在线质量代理，回链 FLY-FEEDBACK）", "unit": "ratio", "informational": true },
+      { "id": "rag_latency_p99_ms", "def": "检索端到端延迟 P99", "unit": "ms", "slo": "<= 300" }
+    ]
+  },
+  "title": "RAG 在线健康指标契约",
+  "description": "RAG 的运行时质量画像：检索命中、引用新鲜度与有效性、语料缺口信号（empty_retrieval/edit 喂回数据飞轮）。离线裁判是 RAG-RETRIEVE，本契约是它的在线镜像，口径必须一致（binds）。"
+}

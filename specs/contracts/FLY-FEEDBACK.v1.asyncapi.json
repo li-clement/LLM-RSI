@@ -1,0 +1,47 @@
+{
+  "asyncapi": "2.6.0",
+  "x-contract": {
+    "id": "FLY-FEEDBACK",
+    "kind": "event",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "AGENT",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@front-steward"
+  },
+  "info": {
+    "title": "在线反馈信号事件流（数据飞轮进料口）",
+    "version": "1.0.0",
+    "description": "用户与系统的显式/隐式反馈。高价值但高噪声：进入训练前必须过 SRC-INGEST 合规门与 DATA 可信度分层（PAT-002）。反馈 ≠ 事实：verdict 类信号只作筛选线索，真值由 RL-VERIFIER/评测仲裁。"
+  },
+  "channels": {
+    "rsi/flywheel.feedback": {
+      "publish": {
+        "operationId": "publishFeedbackSignal",
+        "message": {
+          "name": "FeedbackSignal",
+          "contentType": "application/json",
+          "headers": {
+            "type": "object",
+            "required": ["eventVersion"],
+            "properties": { "eventVersion": { "type": "string", "const": "1" } }
+          },
+          "payload": {
+            "type": "object",
+            "required": ["feedback_id", "episode_ref", "signal_type", "sentiment", "collected_at"],
+            "properties": {
+              "feedback_id": { "type": "string" },
+              "episode_ref": { "type": "string", "description": "回链 TRJ-ROLLOUT.episode_id（断链信号不计入 fly_recirculate_rate）" },
+              "signal_type": { "type": "string", "enum": ["thumbs_up", "thumbs_down", "edit", "regenerate", "abandon", "manual_report"], "description": "edit/regenerate/manual_report 是高密度信号" },
+              "sentiment": { "type": "string", "enum": ["pos", "neg", "neutral"] },
+              "corrected_content_ref": { "type": "string", "description": "signal_type=edit 时的修正内容（内容寻址）" },
+              "context": { "type": "object", "properties": { "model_version": { "type": "string" }, "scene": { "type": "string" }, "experiment_bucket": { "type": "string", "description": "灰度分流桶（可复现归因，S-005 义务）" } } },
+              "collected_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

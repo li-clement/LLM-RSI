@@ -1,0 +1,31 @@
+{
+  "x-contract": {
+    "id": "MDL-CKPT",
+    "kind": "model",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA", "AGENT"],
+    "compatibility": "backward",
+    "steward": "@model-steward"
+  },
+  "x-signature": {
+    "artifact": "safetensors 分片 + 架构 config hash + vocab/tokenizer 指纹 + context_length + positional 方案（RoPE 参数 hash）",
+    "fingerprint": "ckpt_fingerprint = sha256(arch_hash|tok_hash|pos_hash|train_manifest_hash)，RL-ROLLOUT/MID-HEALTH 等工件以此归因",
+    "consumers_use": "DATA：审计与复评定位；AGENT：部署与灰度只认注册表中的 fingerprint"
+  },
+  "x-budget": {
+    "resume_sla": "checkpoint 恢复 + 数据位置回放 < 30 分钟（PAT-003）",
+    "retention_days": 90,
+    "max_artifact_size_gb": 400
+  },
+  "x-fallback": {
+    "corrupt_ckpt": "按 lineage 链回退上一个已验证 ckpt；恢复后先跑 sanity 探针（loss 分布 + 迷你评测）再续训（RB-002）",
+    "orphan_ckpt": "无 train_manifest 的 ckpt 不得进入任何评测与部署通道——来历不明 = 不可比"
+  },
+  "x-lineage": {
+    "required": ["run_id", "stage ∈ {pretrain, mid, post}", "dataset_versions（CORP/SFT 引用）", "eval_protocol_versions", "consumption_position（batch 顺序哈希，PAT-003）", "metric_snapshot_refs（PRE/MID/TRN-HEALTH 链接）"]
+  },
+  "title": "Checkpoint 阶段交接契约（训练流水线之间的硬通货）",
+  "description": "预训练→中训练→后训练→服务，每棒交接物必须自带身世：架构/tokenizer/位置方案指纹 + 训练数据清单 + 消费位置 + 指标快照。交接不可比是循环断链的第一根因。"
+}

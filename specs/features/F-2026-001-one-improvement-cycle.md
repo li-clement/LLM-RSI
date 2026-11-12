@@ -5,8 +5,8 @@ epic: E-001
 status: frozen
 frozen_at: 2026-11-10
 bu: [DATA, MODEL, AGENT]
-contracts: [TRJ-ROLLOUT.v1, DS-TRAINMIX.v1, EVAL-BENCH.v1, MDL-SERVE.v1]
-knowledge: [ADR-0001, PAT-001, PIT-001, RB-001, DOM-001, CARD-001, CARD-002, CARD-003]
+contracts: [TRJ-ROLLOUT.v1, SFT-PAIRS.v1, RL-ROLLOUT.v1, RL-VERIFIER.v1, EVAL-BENCH.v1, POST-EVAL.v1, MDL-CKPT.v1, MDL-SERVE.v1]
+knowledge: [ADR-0001, ADR-0002, PAT-001, PAT-002, PAT-003, PIT-001, PIT-002, RB-001, RB-002, DOM-001, CARD-001, CARD-002, CARD-003]
 owner: "@cycle-owner-01（MODEL 轮值）"
 ---
 
@@ -24,9 +24,11 @@ owner: "@cycle-owner-01（MODEL 轮值）"
 | 工作项 | 责任团队 | 交付物 | 验收锚点 |
 |---|---|---|---|
 | 轨迹采集与上报 | MODEL（serving 侧埋点） | `TRJ-ROLLOUT.v1` 提供方实现 | S-002 |
-| 清洗、去重、组装训练集 | DATA | `DS-TRAINMIX.v1` 提供方实现 | S-003 |
+| 清洗、去重、组装后训练样本 | DATA | `SFT-PAIRS.v1` 提供方实现 | S-011 |
+| RL 轨迹上报与 verifier 对账 | MODEL / DATA | `RL-ROLLOUT.v1` / `RL-VERIFIER.v1` 实现 | S-013 / S-014 |
 | 评测执行与污染审计 | DATA（Eval Steward） | `EVAL-BENCH.v1` 协议执行 | S-004 |
-| challenger 训练与注册 | MODEL | 训练管道 + 模型注册记录 | S-001 |
+| challenger 训练（阶段 ckpt 交接）与注册 | MODEL | 训练管道 + `MDL-CKPT.v1` 注册记录 | S-001 / S-017 |
+| 对齐安全复评 | DATA（Eval Steward） | `POST-EVAL.v1` 协议执行 | S-016 |
 | 灰度流量与熔断执行 | AGENT | `MDL-SERVE.v1` 消费实现 | S-005 |
 
 > 职责切分表是冻结谈判的核心：先划边界与裁判权，再谈数据格式。
@@ -34,7 +36,11 @@ owner: "@cycle-owner-01（MODEL 轮值）"
 ## 契约要点（详情只准引用 ID，不复述字段与阈值）
 
 - [TRJ-ROLLOUT.v1](../contracts/TRJ-ROLLOUT.v1.asyncapi.json)：rollout 轨迹事件流（MODEL→DATA）。
-- [DS-TRAINMIX.v1](../contracts/DS-TRAINMIX.v1.schema.json)：训练集记录契约，含 SLA 与污染断言（DATA→MODEL）。
+- [SFT-PAIRS.v1](../contracts/SFT-PAIRS.v1.schema.json)：后训练样本契约，含人审覆盖率、拒绝采样依据与污染断言（DATA→MODEL）。
+- [RL-ROLLOUT.v1](../contracts/RL-ROLLOUT.v1.asyncapi.json)：RL 训练轨迹事件流（MODEL→DATA）。
+- [RL-VERIFIER.v1](../contracts/RL-VERIFIER.v1.eval.json)：奖励验证器协议——**RL 循环的裁判**（ADR-0002）。
+- [POST-EVAL.v1](../contracts/POST-EVAL.v1.eval.json)：对齐与安全评测协议——**转正的另一票**。
+- [MDL-CKPT.v1](../contracts/MDL-CKPT.v1.model.json)：阶段 checkpoint 交接契约（lineage + 消费位置）。
 - [EVAL-BENCH.v1](../contracts/EVAL-BENCH.v1.eval.json)：评测协议——**本循环的裁判，阈值只有委员会能动**。
 - [MDL-SERVE.v1](../contracts/MDL-SERVE.v1.model.json)：模型服务契约（MODEL→AGENT）。
 
@@ -53,4 +59,4 @@ owner: "@cycle-owner-01（MODEL 轮值）"
 
 ## 验收
 
-端到端：[S-001](../scenarios/S-001-loop-acceptance.md)；契约断言：[S-002](../scenarios/S-002-trj-rollout-contract.md)、[S-003](../scenarios/S-003-ds-trainmix-contract.md)、[S-004](../scenarios/S-004-eval-bench-contract.md)、[S-005](../scenarios/S-005-mdl-serve-contract.md)。
+端到端：[S-001](../scenarios/S-001-loop-acceptance.md)；契约断言：[S-002](../scenarios/S-002-trj-rollout-contract.md)、[S-004](../scenarios/S-004-eval-bench-contract.md)、[S-005](../scenarios/S-005-mdl-serve-contract.md)、[S-011](../scenarios/S-011-sft-pairs-contract.md)、[S-013](../scenarios/S-013-rl-rollout-contract.md)、[S-014](../scenarios/S-014-rl-verifier-contract.md)、[S-016](../scenarios/S-016-post-eval-contract.md)、[S-017](../scenarios/S-017-mdl-ckpt-contract.md)。

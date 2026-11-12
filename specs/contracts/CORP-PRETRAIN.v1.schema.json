@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract": {
+    "id": "CORP-PRETRAIN",
+    "kind": "dataset",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": ["MODEL"],
+    "compatibility": "backward",
+    "steward": "@dataset-steward"
+  },
+  "x-sla": {
+    "cadence": "weekly",
+    "freshness_days": 14,
+    "min_count": 40000000
+  },
+  "x-quality": [
+    { "assert": "eval_leak_count == 0", "action": "block", "note": "对 EVAL-BENCH/POST-EVAL/RAG-RETRIEVE 全部 holdout 及衍生做审计（PIT-001；P3 双通道）" },
+    { "assert": "dedup_tier_pass == 1.0", "action": "block", "note": "分层去重：exact → minhash → embedding，每层比率登记（PAT-002）" },
+    { "assert": "quality_score_floor_pass_rate >= 0.92", "action": "block", "note": "质量过滤分（classifier score）低于地板线占比" },
+    { "assert": "mix_manifest_complete == 1.0", "action": "block", "note": "批次必须携带 mix manifest（域×语言×来源占比），配比是口径不是超参" },
+    { "assert": "tokenizer_fingerprint_match == 1.0", "action": "block", "note": "token 统计按 MDL-CKPT.x-signature.tokenizer 指纹口径——换 tokenizer = 新 major" },
+    { "assert": "consent_scope_train_share == 1.0", "action": "block", "note": "仅 train_and_eval 授权可入预训练" }
+  ],
+  "title": "预训练语料契约（corpus batch）",
+  "description": "DATA 按周组装、MODEL 预训练/中训练消费的语料批次契约。批次 = 版本化 manifest + 不可变数据文件；续跑位置回放见 PAT-003。",
+  "type": "object",
+  "required": ["doc_id", "source_id", "text_ref", "token_count", "quality", "dedup", "provenance"],
+  "properties": {
+    "doc_id": { "type": "string" },
+    "source_id": { "type": "string", "description": "回链 SRC-INGEST.source_id（lineage 不断链）" },
+    "text_ref": { "type": "string", "description": "内容寻址（sha256 URI）" },
+    "lang": { "type": "string", "description": "语言标签（新增语言 = 新 mix 组，CR 审批）" },
+    "token_count": { "type": "integer", "minimum": 1 },
+    "quality": {
+      "type": "object",
+      "required": ["score", "filter_version"],
+      "properties": {
+        "score": { "type": "number" },
+        "filter_version": { "type": "string", "description": "过滤器的登记版本——分数口径可审计" }
+      }
+    },
+    "dedup": {
+      "type": "object",
+      "required": ["tier"],
+      "properties": {
+        "tier": { "type": "string", "enum": ["unique", "near_dup_kept", "dup_dropped"], "description": "PAT-002 分层结果" },
+        "pair_ref": { "type": "string", "description": "near_dup 的锚文档" }
+      }
+    },
+    "mix_group": { "type": "string", "description": "预训练配比组（域×语言）" },
+    "provenance": {
+      "type": "object",
+      "required": ["batch_id", "created_at"],
+      "properties": {
+        "batch_id": { "type": "string", "description": "批次版本 = 消费位置的索引单位（PAT-003）" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

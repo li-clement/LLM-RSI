@@ -9,8 +9,8 @@ status: accepted
 owner: "@liu-yan"
 provenance: [能力盘点-2026-Q4]
 expires: 2027-02-15
-provides: [DS-TRAINMIX.v1, EVAL-BENCH.v1, DQ-QUALITY.v1, FLY-CYCLE.v1]
-consumes: [TRJ-ROLLOUT.v1, TRN-HEALTH.v1]
+provides: [CORP-PRETRAIN.v1, SFT-PAIRS.v1, RAG-DOCS.v1, EVAL-BENCH.v1, RL-VERIFIER.v1, RAG-RETRIEVE.v1, POST-EVAL.v1, DQ-QUALITY.v1, FLY-CYCLE.v1]
+consumes: [TRJ-ROLLOUT.v1, RL-ROLLOUT.v1, SRC-INGEST.v1, FLY-FEEDBACK.v1, TRN-HEALTH.v1, PRE-HEALTH.v1, MID-HEALTH.v1, RAG-HEALTH.v1, MDL-CKPT.v1]
 contact: "#data-rsi-oncall"
 ---
 
@@ -18,9 +18,9 @@ contact: "#data-rsi-oncall"
 
 ## 负责什么
 
-- 轨迹清洗、去重、脱敏复核与训练集组装（每周批次，SLA 见契约）；
-- 评测执行与污染审计——**循环的裁判**（评测权，ADR-0001）；
-- holdout 基准的维护与轮换（45 天），judge 版本登记；
+- 数据采集入口合规（SRC-INGEST 审计）、预训练语料（CORP-PRETRAIN）、后训练样本（SFT-PAIRS）、RAG 知识库（RAG-DOCS）的组装与 SLA；
+- 评测执行与污染审计——**循环的裁判**（评测权，ADR-0001/0002）：通用 EVAL-BENCH、RL 奖励 RL-VERIFIER、RAG 质量 RAG-RETRIEVE、对齐安全 POST-EVAL；
+- holdout/探针题集维护与轮换、judge/verifier 版本登记；
 - 数据开发与飞轮指标契约（DQ-QUALITY / FLY-CYCLE）的定义与采集实现（`quality_suite`）。
 
 ## 边界与非目标
@@ -36,5 +36,5 @@ contact: "#data-rsi-oncall"
 ## 消费节奏与能力
 
 - 批次窗口：每周四交付训练集版本；评测双跑窗口：G3 前 72h；
-- 契约测试：S-003/S-004 已接入 P2/P3（2026-11 起）；
+- 契约测试：S-010/S-011/S-004/S-014/S-016 已接入 P2/P3（2026-11 起）；
 - 值班：`#data-rsi-oncall`，污染告警 30 分钟响应。

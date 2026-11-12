@@ -10,13 +10,16 @@
 4. **Profile 快照是证据**：批级 / run 级 / 循环级三层快照落 `reports/`，保留 ≥90 天，是 experiment-distiller 与下一轮 S1 立靶的法定输入。
 5. **调优走三闸门**：参数级调优自由但必须登记实验指纹；**口径级**（SLO、mix 定义）走 CR；**尺子级**（评测指标阈值）只有委员会——与契约变更同一套权限模型。
 
-## 三层监控（对应三条链路）
+## 场景化监控地图（六条 metric 契约）
 
-| 层 | 指标契约 | 覆盖 | 主要消费方 |
+| 生命周期位置 | 指标契约 | 覆盖 | 主要消费方 |
 |---|---|---|---|
-| 数据开发 | [DQ-QUALITY.v1](../specs/contracts/DQ-QUALITY.v1.metric.json) | 管道作业成功率、新鲜度、体量、去重、污染搬运、lineage、schema 漂移、mix 构成 | MODEL（训练决策）、G3 |
-| 模型训练 | [TRN-HEALTH.v1](../specs/contracts/TRN-HEALTH.v1.metric.json) | MFU、吞吐、loss 尖峰、梯度健康、KL 漂移、reward hacking 探测、实验指纹完备率 | DATA（评测排期）、G3 |
-| 数据飞轮 | [FLY-CYCLE.v1](../specs/contracts/FLY-CYCLE.v1.metric.json) | 回流转化率、循环前置时间、净增益、回归维度、污染事件、换尺子观测、负结果处置数 | 下一轮 S1、治理委员会 |
+| 数据开发（采集→语料→样本） | [DQ-QUALITY.v1](../specs/contracts/DQ-QUALITY.v1.metric.json) | 作业成功率、新鲜度、体量、去重搬运、污染搬运、PII/consent、lineage、schema 漂移 | MODEL（训练决策）、G3 |
+| 预训练 | [PRE-HEALTH.v1](../specs/contracts/PRE-HEALTH.v1.metric.json) | loss 异常、MFU、**位置回放完整性**、curriculum 遵守、tokenizer 指纹、重启损耗 | DATA、RB-002 |
+| 中训练 | [MID-HEALTH.v1](../specs/contracts/MID-HEALTH.v1.metric.json) | needle 分桶召回、长度课程、位置方案登记、短 ctx 保持、annealing 占比对账 | DATA、G3 |
+| 后训练 / RL / 对齐 | [TRN-HEALTH.v1](../specs/contracts/TRN-HEALTH.v1.metric.json) | KL 漂移、verifier 分歧、advantage 塌缩、reward hacking 探测、实验指纹完备率 | DATA（评测排期）、G3 |
+| RAG 在线 | [RAG-HEALTH.v1](../specs/contracts/RAG-HEALTH.v1.metric.json) | 命中率、引用新鲜/有效、**版本歪斜探针**、缺口信号（喂飞轮） | DATA 语料管道、G5 |
+| 数据飞轮（循环级） | [FLY-CYCLE.v1](../specs/contracts/FLY-CYCLE.v1.metric.json) | 回流转化率、前置时间、净增益、污染事件、换尺子观测、负结果处置数 | 下一轮 S1、治理委员会 |
 
 ## 遥测管道
 
@@ -41,7 +44,8 @@ P2/P3 阶段 hooks ──► metrics-store（TSDB 占位：Prometheus/ClickHouse
 ```
 observability/
 ├── README.md          ← 本文
-├── profiling.md       ← 三层 profiling 节奏与调优工作流
+├── profiling.md       ← 批级/run 级/循环级节奏 + 阶段专属调优手感的落点
 └── dashboards/
-    └── rsi-flywheel.board.json   ← 主盘：三行（数据开发/模型训练/飞轮）+ 告警联动
+    ├── rsi-flywheel.board.json      ← 主盘：数据开发/训练/RAG 在线/飞轮 + 告警联动
+    └── training-stages.board.json   ← 训练阶段盘：预训练/中训练/后训练三段
 ```

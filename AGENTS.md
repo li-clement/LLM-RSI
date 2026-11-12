@@ -1,6 +1,6 @@
 ---
 id: AGENTS-ENTRY
-mode: triplane/0.2
+mode: triplane/0.3
 status: accepted
 owner: rsi-governance-committee
 ---
@@ -36,7 +36,7 @@ owner: rsi-governance-committee
 - **不得批准**任何状态跃迁（approved / frozen / accepted / KB）。
 - **不得修改** `frozen` 状态的契约本体（只能起草 CR）。
 - **不得发布**知识项（只有 Knowledge Curator 可把 candidate 提升为 accepted）。
-- **不得修改评测协议（`EVAL-*`）的指标定义与阈值**——任何变更一律破坏性，只有治理委员会可批（ADR-0001）。
+- **不得修改任何评测协议契约（kind=eval：`EVAL-BENCH` / `RL-VERIFIER` / `RAG-RETRIEVE` / `POST-EVAL`）的指标定义与阈值**——一切"运行时裁判"等同尺子，变更一律破坏性 + 委员会（ADR-0001 / ADR-0002）。
 - 不得在产出中复制契约事实到知识库正文——只引用 ID（单一事实源）。
 
 ## 5. 产出落盘规则

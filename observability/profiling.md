@@ -24,6 +24,17 @@
 - **调优粒度**：循环结构——批次 cadence、审计通道并行化、灰度阶梯时长。**这类调优改的是流水线不是模型**，走 Spec 平面（新 Feature 或 CR）。
 - **下一步输入**：下一轮 S1 立靶**必须引用**上一轮 flywheel.json——目标维度从数据来，不从会议室来。
 
+## 阶段专属调优对象（场景化手感落在哪）
+
+run 级节奏对每个阶段的具体化——**指标 ID 即调优仪表盘，指纹即账本**：
+
+| 阶段 | 主读数 | 参数级自由区 | 口径级红线（走 CR） | 专属防线 |
+|---|---|---|---|---|
+| 预训练 | `pre_loss_zscore`、`pre_mfu`、`pre_restart_loss_events` | 并行策略、LR 调度、加载管线 | **curriculum 声明与消费顺序**（`pre_curriculum_adherence`）、mix manifest 占比 | 位置回放（PAT-003）：无 `pre_data_position_reg_rate` 的 run 不可比 |
+| 中训练 | `mid_needle_recall_by_ctx`、`mid_loss_plateau_events` | 分桶阈值、LR 退火形状 | 长度课程定义、位置方案（`mid_position_scheme_reg_rate`）、高质量占比 | 短 ctx 保持探针（`mid_shortctx_regression`）——防"长了忘了短" |
+| 后训练 / RL | `trn_kl_drift`、`trn_rl_verifier_disagreement_rate`、`trn_rl_advantage_collapse_events` | 采样温度、组大小、reward 归一化的**实现**参数 | reward **定义与版本**（RL-VERIFIER，尺子级）、judge 口径 | reward↑/eval 平 = PIT-002 触发，冻结进 shadow 不是回滚重调 |
+| RAG | `rag_hit_rate`、`rag_stale_citation_rate`、`rag_version_skew_events` | top-k、rerank 权重、降权曲线 | embedding/chunking 版本（PIT-003）、探针题集（尺子级） | 归因铁律：先版本对账，再看模型 |
+
 ## 调优提案的分类路由（三闸门在观测域的形态）
 
 | 提案类型 | 例子 | 路由 | 验证方式 |

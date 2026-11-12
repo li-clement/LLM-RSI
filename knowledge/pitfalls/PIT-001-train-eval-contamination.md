@@ -31,7 +31,7 @@ INC-RSI-002：某轮 challenger 报 +5.1pp。事后审计发现三件事同时�
 
 ## 探测：流水线怎么拦
 
-- P3 污染审计（**双通道**）：n-gram 精确重叠 + embedding 相似度阈（对变体）；`eval_leak_count == 0` 是 block 级断言（DS-TRAINMIX.x-quality）；
+- P3 污染审计（**双通道**）：n-gram 精确重叠 + embedding 相似度阈（对变体）；`eval_leak_count == 0` 是 block 级断言（CORP-PRETRAIN / SFT-PAIRS .x-quality）；
 - lineage 强制：每条样本 `source` + `origin` 可回溯，`distilled` 必须填原型 ID；
 - judge_version 绑定：评测报告与数据集版本都登记 judge_version，不一致 → 结果作废（S-004 #5）；
 - eval 契约 diff：P1 对 `EVAL-BENCH` 任何字段变更自动标红，要求标题带 CR + 委员会决议编号；

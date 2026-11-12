@@ -108,7 +108,7 @@ ID 规则见 [specs/README.md](specs/README.md)；域码表：`TRJ`（轨迹，M
 | 流水线 | 触发 | 核心阶段 | Agent 嵌入点 |
 |---|---|---|---|
 | **P1 Spec 流水线** | Spec 仓库 PR | `check.py --strict` → schema-diff（数据集/接口兼容性）→ **eval 协议 diff（任何阈值变化自动标红）** → 影响分析 | cycle-summarizer, contract-impact, compat-reviewer |
-| **P2 团队开发流水线** | DATA 数据管道 / MODEL 训练管道 push | 数据侧：质量断言即测试（S-003 直译）；模型侧：训练配置必须引用 frozen 契约版本 + **污染预检** | assertion-forge, test-weaver |
+| **P2 团队开发流水线** | DATA 数据管道 / MODEL 训练管道 push | 数据侧：质量断言即测试（S-010/S-011 直译）；模型侧：训练配置必须引用 frozen 契约版本 + **污染预检** | assertion-forge, test-weaver |
 | **P3 收敛流水线（评测）** | 契约进入 `frozen` | 装配 frozen 环境 → 污染审计（holdout ∩ 训练 mix = ∅）→ 评测套件双跑（复现偏差 ≤ ε）→ 数据质量断言全绿 → 证据报告 | compat-reviewer |
 | **P4 发布流水线** | KB 联签后 | champion–challenger 编排：shadow 双跑 → 灰度 1%→10%→100% → 熔断探针（直接用契约断言）→ 观察期 → 回流 | release-orchestrator, experiment-distiller |
 
@@ -224,4 +224,4 @@ G1 三平面校验绿   → G2 契约冻结      → G3 收敛全绿            
 └── tools/check.py           ← 三平面一致性校验器（G1，纯 stdlib，含指标/看板引用校验）
 ```
 
-示例链是本项目的一个真实形态循环：[E-001 RSI 最小改进循环](specs/epics/E-001-rsi-minimum-loop.md) → [F-2026-001 一个完整改进循环](specs/features/F-2026-001-one-improvement-cycle.md) → 循环四契约（[TRJ-ROLLOUT](specs/contracts/TRJ-ROLLOUT.v1.asyncapi.json) / [DS-TRAINMIX](specs/contracts/DS-TRAINMIX.v1.schema.json) / [EVAL-BENCH](specs/contracts/EVAL-BENCH.v1.eval.json) / [MDL-SERVE](specs/contracts/MDL-SERVE.v1.model.json)）+ 项目级三指标契约（[DQ-QUALITY](specs/contracts/DQ-QUALITY.v1.metric.json) / [TRN-HEALTH](specs/contracts/TRN-HEALTH.v1.metric.json) / [FLY-CYCLE](specs/contracts/FLY-CYCLE.v1.metric.json)）→ 八场景 → [ADR-0001 三权分立](knowledge/decisions/ADR-0001-eval-authority-separation.md) 等知识闭环。
+示例链按**场景化契约族**组织：数据工程六环节（采集 `SRC-INGEST` / 预训练语料 `CORP-PRETRAIN` / 后训练样本 `SFT-PAIRS` / RL `RL-ROLLOUT`+`RL-VERIFIER` / RAG `RAG-DOCS`+`RAG-RETRIEVE` / 飞轮 `FLY-FEEDBACK`+`TRJ-ROLLOUT`+`FLY-CYCLE`）× 模型训练三阶段（预训练 `PRE-HEALTH`+`MDL-CKPT` / 中训练 `MID-HEALTH` / 后训练 `TRN-HEALTH`+`POST-EVAL`+`MDL-SERVE`），共 19 契约 + 20 场景 + 14 知识项。起点仍是 [E-001](specs/epics/E-001-rsi-minimum-loop.md) → [F-2026-001](specs/features/F-2026-001-one-improvement-cycle.md)，完整映射见 [specs/contracts/README.md](specs/contracts/README.md)。

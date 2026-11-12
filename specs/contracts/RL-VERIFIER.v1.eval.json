@@ -1,0 +1,40 @@
+{
+  "x-contract": {
+    "id": "RL-VERIFIER",
+    "kind": "eval",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": ["MODEL"],
+    "compatibility": "bidirectional",
+    "steward": "@eval-steward",
+    "approval": "committee"
+  },
+  "x-protocol": {
+    "benchmark": {
+      "ref": "model-registry.rsi.internal/verifier/fixtures-v1",
+      "fixtures_min": 3000,
+      "note": "验证器自身要有考卷：known-good / known-bad / 边界对抗三类 fixture，fixture 集不进任何训练通道（隔离见下）"
+    },
+    "metrics": [
+      { "id": "verifier_precision", "def": "verifier 判 pass 中真 pass 的比例（fixture 金标）", "direction": "bounded" },
+      { "id": "verifier_recall", "def": "真 pass 中被判 pass 的比例", "direction": "bounded" },
+      { "id": "verifier_disagreement_rate", "def": "verifier 与独立 judge 抽样复核的分歧率", "direction": "bounded" },
+      { "id": "reward_eval_divergence", "def": "RL reward 曲线涨幅与 EVAL-BENCH 真实涨幅的差值（过优化探测器）", "direction": "bounded" }
+    ],
+    "thresholds": {
+      "verifier_precision": ">= 0.95",
+      "verifier_recall": ">= 0.90",
+      "verifier_disagreement_rate": "<= 0.05",
+      "reward_eval_divergence": "<= 1.5pp/循环"
+    },
+    "isolation": [
+      "verifier fixture 集与其衍生物禁止进入 SFT-PAIRS / CORP-PRETRAIN / RL 题池（P3 审计同一通道）",
+      "MODEL 可提议 verifier 改动（draft CR），实现与部署归 DATA；版本登记后新旧双跑 ≥1 循环（RL-VERIFIER 换版 = 尺子级）",
+      "reward 归一化/组内标准化口径写在 x-impl-ref 登记表，禁止训练侧本地重定义"
+    ],
+    "x-impl-ref": "verifier 实现与版本的登记表由 DATA 维护，事件侧字段：RL-ROLLOUT.verifier_result.verifier_version"
+  },
+  "title": "RL 验证器与奖励协议契约（RL 循环的裁判）",
+  "description": "reward 是评测协议的运行时延伸——优化哪个 reward，哪个就是尺子。因此同享三权分立：定义与部署归 DATA，变更归委员会（ADR-0002）。"
+}

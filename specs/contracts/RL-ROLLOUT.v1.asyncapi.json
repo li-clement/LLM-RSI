@@ -1,0 +1,57 @@
+{
+  "asyncapi": "2.6.0",
+  "x-contract": {
+    "id": "RL-ROLLOUT",
+    "kind": "event",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@model-steward"
+  },
+  "info": {
+    "title": "RL 训练轨迹事件流（policy rollout）",
+    "version": "1.0.0",
+    "description": "RL 阶段策略采样轨迹（训练域，区别于线上回流的 TRJ-ROLLOUT）。DATA 审计消费：verifier 分歧监控、污染防泄漏（rollout 题面可能来自评测衍生池）。group 语义：同 prompt 一组轨迹。"
+  },
+  "channels": {
+    "rsi/rl.rollout": {
+      "publish": {
+        "operationId": "publishRlRollout",
+        "message": {
+          "name": "RlRolloutTrace",
+          "contentType": "application/json",
+          "headers": {
+            "type": "object",
+            "required": ["eventVersion"],
+            "properties": {
+              "eventVersion": { "type": "string", "const": "1" },
+              "run_id": { "type": "string", "description": "训练 run 标识（MDL-CKPT.x-lineage.run_id 同域）" }
+            }
+          },
+          "payload": {
+            "type": "object",
+            "required": ["group_id", "episode_id", "ckpt_fingerprint", "task_ref", "verifier_result", "reward"],
+            "properties": {
+              "group_id": { "type": "string", "description": "同 prompt 的 rollout 组（advantage 估计的单位）" },
+              "episode_id": { "type": "string", "description": "组内唯一" },
+              "ckpt_fingerprint": { "type": "string", "description": "产出该轨迹的 checkpoint 指纹（MDL-CKPT.x-signature.fingerprint）" },
+              "task_ref": { "type": "string", "description": "题面哈希——必须通过 holdout deny-list 校验（PIT-001）" },
+              "verifier_result": {
+                "type": "object",
+                "required": ["verdict", "verifier_version"],
+                "properties": {
+                  "verdict": { "type": "string", "enum": ["pass", "fail", "partial", "error"] },
+                  "verifier_version": { "type": "string", "description": "绑定 RL-VERIFIER.v1 登记版本——reward 口径漂移探测器" }
+                }
+              },
+              "reward": { "type": "number", "description": "组内标准化后的最终奖励分量" },
+              "steps_digest": { "type": "object", "properties": { "step_count": { "type": "integer" }, "steps_hash": { "type": "string" } } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

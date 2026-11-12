@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "x-contract": {
+    "id": "SRC-INGEST",
+    "kind": "dataset",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "AGENT",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@front-steward"
+  },
+  "x-sla": {
+    "cadence": "stream",
+    "freshness_hours": 24,
+    "min_count": 2000000
+  },
+  "x-quality": [
+    { "assert": "pii_stripped_rate == 1.0", "action": "block", "note": "脱敏在采集侧完成，DATA 不收带 PII 的原文" },
+    { "assert": "consent_valid_rate == 1.0", "action": "block", "note": "consent_scope 为 none 的记录不得进入训练/评测通道" },
+    { "assert": "source_registered_rate == 1.0", "action": "block", "note": "source_id 必须在源登记表（DATA 维护）" },
+    { "assert": "raw_dedup_rate >= 0.90", "action": "warn", "note": "采集侧重复拉取探测；正式去重分层见 CORP-PRETRAIN 与 PAT-002" }
+  ],
+  "title": "数据采集入口契约（原始事件进数据域的第一道门）",
+  "description": "AGENT 域产生、DATA 域接收的最小合规单元。合规属性（license/consent/PII）在这里锁定——后补成本 ×10。字段只增不减；consent_scope 枚举收窄 = 破坏性（PIT-001 同理适用）。",
+  "type": "object",
+  "required": ["event_id", "source_id", "event_type", "consent_scope", "pii_stripped", "collected_at"],
+  "properties": {
+    "event_id": { "type": "string", "description": "全局唯一，幂等键（重复投递去重主键）" },
+    "source_id": { "type": "string", "description": "源登记表 ID：渠道/站点/系统，含 license 属性" },
+    "event_type": { "type": "string", "enum": ["user_message", "agent_action", "tool_result", "feedback", "correction"], "description": "feedback/correction 是飞轮的高价值信号（FLY-FEEDBACK 关联）" },
+    "consent_scope": { "type": "string", "enum": ["train_and_eval", "eval_only", "internal_stats_only"], "description": "授权范围决定下游通道；新增枚举需合规评审" },
+    "pii_stripped": { "type": "boolean", "description": "采集侧恒为 true；false 在入口门禁拒收" },
+    "content_ref": { "type": "string", "description": "正文走对象存储的哈希寻址（lineage 起点）" },
+    "content_sha256": { "type": "string", "description": "原文指纹，供去重分层（PAT-002）与审计" },
+    "collected_at": { "type": "string", "format": "date-time" },
+    "scene": { "type": "string", "description": "场景标签：tool_use / qa / rag_query / coding ...（mix 口径的分组维度）" }
+  }
+}

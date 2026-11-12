@@ -1,0 +1,25 @@
+{
+  "x-contract": {
+    "id": "MID-HEALTH",
+    "kind": "metric",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@midtrain-steward"
+  },
+  "x-telemetry": {
+    "collect": "中训练（长上下文扩展 / annealing / 域适配）run hooks 上报；needle 探针按 context 分桶随批次运行；快照 reports/<run>/mid-profile.json",
+    "metrics": [
+      { "id": "mid_needle_recall_by_ctx", "def": "分桶（8k/32k/128k）长上下文探针召回率 P50", "unit": "ratio", "slo": ">= 0.98@8k; >= 0.95@32k", "note": "随 curriculum 阶段推进分桶阈值收紧" },
+      { "id": "mid_ctx_curriculum_adherence", "def": "序列长度分布与声明 curriculum 的偏差（PSI）", "unit": "ratio", "slo": "<= 0.10" },
+      { "id": "mid_position_scheme_reg_rate", "def": "RoPE/位置外推参数 hash 登记进 MDL-CKPT 的比例", "unit": "ratio", "slo": "== 1.0", "note": "换位置方案 = 模型契约级变更" },
+      { "id": "mid_loss_plateau_events", "def": "annealing 期 loss 平台期检测事件（斜率阈值）", "unit": "count/run", "informational": true, "note": "平台期是调 LR/mix 的信号，但只到参数级——mix 定义属 CORP 契约" },
+      { "id": "mid_shortctx_regression", "def": "短上下文能力保持探针（防长 ctx 换短 ctx 回退）", "unit": "percentage-point", "slo": ">= champion -0.5pp" },
+      { "id": "mid_data_mix_highq_share", "def": "annealing 阶段高质量语料占比（与 mix manifest 对账）", "unit": "ratio", "slo": ">= 0.60", "binds": "CORP-PRETRAIN.v1.x-quality[mix_manifest_complete]" }
+    ]
+  },
+  "title": "中训练健康指标契约（长上下文扩展 / annealing）",
+  "description": "中训练最容易被当成调参黑箱：位置方案、长度课程、高质量占比全是口径，必须落契约对账。needle 探针口径由 RAG-RETRIEVE/EVAL-BENCH 的对应小节定义，本文件只搬运。"
+}
