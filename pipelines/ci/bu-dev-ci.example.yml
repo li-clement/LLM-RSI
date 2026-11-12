@@ -1,0 +1,47 @@
+# P2 BU 开发流水线 —— 业务仓库接入 TriPlane 的最小义务模板
+# 以 mid-repo（交易中台部订单服务）为例；GitLab/Jenkins 等价翻译，语义不变。
+name: bu-dev-ci-triplane
+
+on:
+  pull_request:
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 义务 1：契约测试 —— 从 Spec 仓库按冻结版本拉契约与场景
+      - name: Fetch frozen contracts & scenarios
+        run: |
+          # 缓存 spec 仓库 commit = 本 MR 关联 Feature 的 frozen_at 时点（由工具注入）
+          git clone --depth 1 https://git.internal/triplane.git .triplane
+          python3 .triplane/tools/check.py stats   # 顺带把三平面健康度写进构建日志
+
+      - name: Run provider contract tests (S-002, S-003)
+        run: |
+          # runner 字段来自场景 frontmatter：S-002 → mid-repo/contract-tests/ord-create
+          npm test -- --grep "contract:S-002|contract:S-003"
+
+      # 义务 2：知识门禁 —— MR 必须引用知识项 ID 或显式 none
+      - name: Knowledge reference gate
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          if ! echo "$BODY" | grep -Eq "knowledge:[[:space:]]*(none|([A-Z]+-[0-9]+[[:space:]]*,?)+)"; then
+            echo "::error::MR 描述需含 knowledge: 行（引用 ID 或 none），见 knowledge/README.md"
+            exit 1
+          fi
+
+      # 注入相关 pitfall 清单给评审者与人机结对 Agent（信息性，不阻塞）
+      - name: Attach relevant knowledge context
+        run: |
+          python3 .triplane/tools/check.py stats --changed "$(git diff --name-only HEAD~1 | tr '\n' ' ')" || true
+
+  # scenario-forge / test-weaver 的触发器：发现契约场景缺实现时由 Agent 开 PR
+  agent-test-weaver:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          # 占位：检测 specs 中本 BU 相关 S-xxx 的 runner 是否缺实现，
+          # 缺则调用 test-weaver 生成骨架 PR（Agent 只能开 draft PR——三闸门之一）
+          echo "POST ${{ vars.AGENT_API }}/test-weaver"

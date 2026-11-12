@@ -1,0 +1,47 @@
+{
+  "asyncapi": "2.6.0",
+  "x-contract": {
+    "id": "ORD-PAID",
+    "kind": "event",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MID",
+    "consumers": ["PAY", "FULFILL"],
+    "compatibility": "backward",
+    "steward": "@trade-steward-mid"
+  },
+  "info": {
+    "title": "订单已支付事实事件",
+    "version": "1.0.0",
+    "description": "订单收到 PAY 确认回执后由 MID 发布。事件是事实记录不是命令：消费方必须按至少一次投递设计（ADR-0001）。字段演进规则见 PIT-001。"
+  },
+  "channels": {
+    "order/order.paid": {
+      "publish": {
+        "operationId": "publishOrderPaid",
+        "message": {
+          "name": "OrderPaid",
+          "contentType": "application/json",
+          "headers": {
+            "type": "object",
+            "properties": {
+              "eventVersion": { "type": "string", "const": "1" },
+              "traceId": { "type": "string" }
+            },
+            "required": ["eventVersion"]
+          },
+          "payload": {
+            "type": "object",
+            "required": ["orderId", "paymentId", "amountCents", "paidAt"],
+            "properties": {
+              "orderId": { "type": "string" },
+              "paymentId": { "type": "string", "description": "PAY 域支付单号，见 PAY-CONFIRM.v1" },
+              "amountCents": { "type": "integer" },
+              "paidAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

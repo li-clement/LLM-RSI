@@ -1,0 +1,48 @@
+# P1 Spec 流水线 —— Spec 仓库 CI（G1 门禁）
+# GitHub Actions 示例；GitLab/Jenkins 按 pipelines/README.md 的阶段等价翻译。
+name: spec-plane-ci
+
+on:
+  pull_request:
+    paths:
+      - "specs/**"
+      - "knowledge/**"
+      - "templates/**"
+      - "tools/check.py"
+
+jobs:
+  triplane-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 兼容性 diff 需要与 main 的 merge-base
+
+      # G1：三平面一致性（ID/引用/TTL/状态机）——唯一硬依赖是 python
+      - name: TriPlane consistency check
+        run: python3 tools/check.py --strict | tee reports_g1.log
+
+      # 契约 lint（占位：安装 spectral 后启用）
+      - name: Contract lint (spectral)
+        run: |
+          npm i -g @stoplight/spectral-cli
+          find specs/contracts -name '*.openapi.json' -o -name '*.asyncapi.json' |
+            xargs -r -I{} spectral lint {}
+
+      # 兼容性判定：契约文件被改动时，对基线版本做 breaking diff
+      - name: Contract compatibility diff
+        run: |
+          # oasdiff-action breaking 为占位；也可用 oasdiff CLI 自写
+          # 语义：检测到 breaking 且 PR 未关联 CR（标题含 CR-）→ 失败
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'specs/contracts/*.json' || true)
+          if [ -n "$CHANGED" ] && [[ ! "${{ github.event.pull_request.title }}" =~ CR- ]]; then
+            echo "::error::契约变更必须关联 CR（标题含 CR-<num>）；breaking 判定由 oasdiff 执行"
+            exit 1
+          fi
+
+      # Agent job：spec-summarizer（起草性产出，不阻塞合并）
+      - name: Spec summarizer agent (draft only)
+        if: github.actor != 'bot-spec-agent'
+        run: |
+          # 调用约定见 agents/playbooks.md #1：输入=PR diff + 受影响 ID 列表，输出=PR 评论
+          echo "POST ${{ vars.AGENT_API }}/spec-summarizer"   # 占位：接入公司 Agent 网关
