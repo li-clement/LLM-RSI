@@ -22,7 +22,7 @@ EPIC_STATUS = FEATURE_STATUS
 CONTRACT_STATUS = {"active", "deprecated"}
 KNOWLEDGE_STATUS = {"candidate", "accepted", "retired", "superseded", "proposed"}
 SCENARIO_STATUS = {"draft", "accepted", "retired"}
-FLAVOR_KIND = {"openapi": "api", "asyncapi": "event", "schema": "data"}
+FLAVOR_KIND = {"openapi": "api", "asyncapi": "event", "schema": "dataset", "model": "model", "eval": "eval"}
 DIR_TYPE = {
     "domain": "glossary",
     "capabilities": "capability",
@@ -31,7 +31,7 @@ DIR_TYPE = {
     "pitfalls": "pitfall",
     "runbooks": "runbook",
 }
-CONTRACT_NAME_RE = re.compile(r"^(?P<id>[A-Z]{2,8}-[A-Z0-9]+)\.v(?P<major>\d+)\.(?P<flavor>openapi|asyncapi|schema)\.json$")
+CONTRACT_NAME_RE = re.compile(r"^(?P<id>[A-Z]{2,8}-[A-Z0-9]+)\.v(?P<major>\d+)\.(?P<flavor>openapi|asyncapi|schema|model|eval)\.json$")
 STEM_ID_RE = re.compile(r"^(?P<id>[A-Z]{2,6}-[0-9]{1,4}|[A-Z]{2,6}-[0-9]{4})(?=(-|$))")
 
 errors: list = []
@@ -137,11 +137,35 @@ def load_contracts():
         ver = str(xc.get("version", ""))
         if ver.split(".")[0] != str(major):
             err(where, f"x-contract.version `{ver}` 主版本 != 文件名 v{major}")
-        root_key = {"openapi": "openapi", "asyncapi": "asyncapi", "schema": "$schema"}[flavor]
-        if root_key not in doc and flavor != "schema":
-            err(where, f"文档缺少 `{root_key}` 版本根字段")
-        if flavor == "openapi" and doc.get("info", {}).get("version") and str(doc["info"]["version"]).split(".")[0] != str(major):
-            err(where, "info.version 主版本与文件名不一致")
+        if flavor == "openapi":
+            if "openapi" not in doc:
+                err(where, "文档缺少 `openapi` 版本根字段")
+            if doc.get("info", {}).get("version") and str(doc["info"]["version"]).split(".")[0] != str(major):
+                err(where, "info.version 主版本与文件名不一致")
+        elif flavor == "asyncapi":
+            if "asyncapi" not in doc:
+                err(where, "文档缺少 `asyncapi` 版本根字段")
+        elif flavor == "schema":
+            if "$schema" not in doc and doc.get("type") != "object":
+                err(where, "数据集契约必须是 JSON Schema（$schema 或 type: object）")
+            sla = doc.get("x-sla")
+            if not isinstance(sla, dict) or not sla.get("cadence") or not sla.get("min_count"):
+                err(where, "数据集契约必须声明 x-sla（cadence / freshness_days / min_count）")
+            if not doc.get("x-quality"):
+                err(where, "数据集契约必须声明至少一条 x-quality 质量断言——没有断言的数据集不是资产，是负债")
+        elif flavor == "eval":
+            if xc.get("approval") != "committee":
+                err(where, "评测契约的 x-contract.approval 必须为 committee——阈值冻结权在治理委员会（换尺子防线）")
+            proto = doc.get("x-protocol")
+            missing = [k for k in ("benchmark", "metrics", "thresholds", "isolation") if not isinstance(proto, dict) or not proto.get(k)]
+            if missing:
+                err(where, f"评测契约 x-protocol 缺少节: {missing}")
+            elif not isinstance(proto.get("thresholds"), dict):
+                err(where, "x-protocol.thresholds 必须是 metric -> 阈值 的映射")
+        elif flavor == "model":
+            for ext in ("x-signature", "x-budget", "x-fallback"):
+                if not doc.get(ext):
+                    err(where, f"模型契约必须声明 {ext}（接口签名 / 成本与延迟预算 / 降级策略）")
         status = xc.get("status")
         if status not in CONTRACT_STATUS:
             err(where, f"status `{status}` 非法（{sorted(CONTRACT_STATUS)}）")

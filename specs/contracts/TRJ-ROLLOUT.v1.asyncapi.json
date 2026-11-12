@@ -1,0 +1,64 @@
+{
+  "asyncapi": "2.6.0",
+  "x-contract": {
+    "id": "TRJ-ROLLOUT",
+    "kind": "event",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": ["DATA"],
+    "compatibility": "backward",
+    "steward": "@model-steward"
+  },
+  "info": {
+    "title": "Agent 轨迹回流事件流（rollout trace）",
+    "version": "1.0.0",
+    "description": "AGENT 域产生的会话轨迹经 MODEL serving 侧埋点归一后发布，DATA 清洗消费。投递语义 at-least-once：DATA 按 episode_id 去重。判分口径（terminal_verdict.judge_version）必须随事件传输，见 PIT-001。"
+  },
+  "channels": {
+    "rsi/agent.rollout": {
+      "publish": {
+        "operationId": "publishRolloutTrace",
+        "message": {
+          "name": "RolloutTrace",
+          "contentType": "application/json",
+          "headers": {
+            "type": "object",
+            "required": ["eventVersion"],
+            "properties": {
+              "eventVersion": { "type": "string", "const": "1" },
+              "traceId": { "type": "string" }
+            }
+          },
+          "payload": {
+            "type": "object",
+            "required": ["episode_id", "model_version", "task_id", "terminal_verdict", "pii_stripped", "recorded_at"],
+            "properties": {
+              "episode_id": { "type": "string", "description": "幂等去重主键" },
+              "model_version": { "type": "string", "description": "必须能在模型注册表解析，S-002 断言" },
+              "task_id": { "type": "string", "description": "任务实例标识；禁止携带 holdout 的 eval_bench_id（污染防线，PIT-001）" },
+              "steps_digest": {
+                "type": "object",
+                "required": ["step_count", "steps_hash"],
+                "properties": {
+                  "step_count": { "type": "integer", "minimum": 1 },
+                  "steps_hash": { "type": "string", "description": "完整步骤序列的内容哈希；正文另走对象存储，lineage 由哈希回溯" }
+                }
+              },
+              "terminal_verdict": {
+                "type": "object",
+                "required": ["outcome", "judge_version"],
+                "properties": {
+                  "outcome": { "type": "string", "enum": ["succeeded", "failed", "refused", "timeout"] },
+                  "judge_version": { "type": "string", "description": "判分器版本——口径漂移探测器" }
+                }
+              },
+              "pii_stripped": { "type": "boolean", "description": "生产方必须恒为 true；false 事件在发布侧门禁拦截" },
+              "recorded_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

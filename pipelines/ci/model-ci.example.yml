@@ -1,0 +1,54 @@
+# P2 MODEL 训练流水线 —— 模型团队接入 TriPlane 的最小义务模板
+# 核心：训练配置必须引用 frozen 契约版本与数据集版本（可比性前提）。
+name: model-training-ci-triplane
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      dataset_version: { description: "DS-TRAINMIX 批次版本", required: true }
+
+jobs:
+  contract-pin-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 义务 1：契约版本锁定检查——训练配置里的契约引用必须 = 当前 frozen 版本
+      - name: Verify frozen contract pins
+        run: |
+          git clone --depth 1 https://git.internal/triplane-rsi.git .triplane
+          python3 .triplane/tools/check.py stats --changed "specs/contracts/DS-TRAINMIX.v1.schema.json"
+          # 占位：比对 train_config.yaml 中的 contracts: 段与 Spec 仓库 frozen 指纹
+          python3 -m trainkit verify-pins --config train_config.yaml --spec .triplane/specs
+
+      # 义务 2：污染自检（embedding 通道；n-gram 在 DATA 侧，双通道各半）
+      - name: Self contamination check
+        run: python3 -m trainkit leakcheck --dataset "${{ inputs.dataset_version }}" --embed-threshold 0.9 --fail-on-any
+
+      # 义务 3：注册 challenger 必须写入契约版本指纹（PAT-001 第 5 步）
+      - name: Register challenger with contract fingerprint
+        run: |
+          python3 -m trainkit register \
+            --dataset "${{ inputs.dataset_version }}" \
+            --eval-protocol EVAL-BENCH.v1 \
+            --trace-contract TRJ-ROLLOUT.v1 \
+            --fingerprint-from .triplane/specs/contracts
+
+      # scenario-forge / test-weaver 触发器：契约场景缺实现时 Agent 开 draft PR
+      agent-test-weaver:
+        runs-on: ubuntu-latest
+        steps:
+          - run: |
+              # 占位：检测 S-002/S-005 的 runner 是否缺实现，缺则调用 test-weaver
+              # 生成测试骨架 PR（Agent 只能开 draft PR——三闸门之一）
+              echo "POST ${{ vars.AGENT_API }}/test-weaver"
+
+  # 自提案通道：RSI 系统生成的 mix/配置补丁只能以此 job 进入（draft PR）
+  self-proposal-inbox:
+    if: github.actor == 'bot-rsi-self'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "自提案只允许产出 draft CR；provenance 必须含 model:<version>@<episode>"
+          echo "POST ${{ vars.AGENT_API }}/proposal-normalizer"

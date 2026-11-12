@@ -1,8 +1,8 @@
 ---
 id: AGENTS-ENTRY
-mode: triplane/0.1
+mode: triplane/0.2
 status: accepted
-owner: spec-plane-committee
+owner: rsi-governance-committee
 ---
 
 # AGENTS.md — Agent 工作契约
@@ -11,7 +11,9 @@ owner: spec-plane-committee
 
 ## 1. 你在哪个模式里
 
-三平面协同模式（见 [MODE.md](MODE.md)）：Spec 平面承载意图与契约，Knowledge 平面承载经验与决策，Execution 平面承载证据。三个平面通过 **ID 引用**咬合，通过 `tools/check.py` 校验一致性。
+三平面协同模式（见 [MODE.md](MODE.md)，RSI 适配）：Spec 平面承载意图与契约（五类：dataset/event/api/eval/model），Knowledge 平面承载经验与决策（含**负结果**），Execution 平面承载证据。三个平面通过 **ID 引用**咬合，通过 `tools/check.py` 校验一致性。
+
+**RSI 项目的特别约定：改进循环自身（模型生成的 mix 提案、训练补丁、接口变更草稿）也是一个 Agent**——同等受本文件三闸门约束，provenance 标注 `model:<version>@<episode>`。允许递归，禁止换尺子。
 
 ## 2. 上下文加载顺序（固定，不得跳步）
 
@@ -26,13 +28,15 @@ owner: spec-plane-committee
 - 生成/修改 Feature、Scenario、契约草稿、CR 草稿 → 状态一律 `draft`，开 PR。
 - 契约变更影响分析、兼容性 diff 报告（按 [agents/playbooks.md](agents/playbooks.md) 的模板输出）。
 - 从 Scenario 生成可执行测试骨架；从 CR 草稿生成契约测试补丁建议。
-- 从 diff/事故材料抽取**候选**知识项（`status: candidate`，`provenance: agent:<playbook>@<run>`）。
+- 从 diff/事故材料/**循环 run 证据（含失败循环）**抽取**候选**知识项（`status: candidate`，`provenance: agent:<playbook>@<run>`）。
+- 代表 RSI 自提案开 **draft CR**（mix 建议、训练配置补丁、接口变更草稿）——只到 CR §1–§3，不得填写批准节。
 
 ## 4. 你不可以做的（权限三闸门）
 
 - **不得批准**任何状态跃迁（approved / frozen / accepted / KB）。
 - **不得修改** `frozen` 状态的契约本体（只能起草 CR）。
 - **不得发布**知识项（只有 Knowledge Curator 可把 candidate 提升为 accepted）。
+- **不得修改评测协议（`EVAL-*`）的指标定义与阈值**——任何变更一律破坏性，只有治理委员会可批（ADR-0001）。
 - 不得在产出中复制契约事实到知识库正文——只引用 ID（单一事实源）。
 
 ## 5. 产出落盘规则

@@ -1,0 +1,38 @@
+{
+  "x-contract": {
+    "id": "MDL-SERVE",
+    "kind": "model",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "MODEL",
+    "consumers": [
+      "AGENT"
+    ],
+    "compatibility": "backward",
+    "steward": "@model-steward"
+  },
+  "x-signature": {
+    "input": "OpenAI 兼容 /chat/completions；messages + tools；context <= 32k tokens",
+    "output": "completion + tool_calls；响应必须携带 model_version 字段（AGENT 埋点回流依赖它）"
+  },
+  "x-deployment": {
+    "registry": "model-registry.rsi.internal",
+    "promotion": "champion-challenger（PAT-001）；champion 热备 >= 14 天",
+    "serving": "vllm x 8 / 双可用区"
+  },
+  "x-budget": {
+    "p99_latency_ms": 2500,
+    "max_cost_per_ktoken": 0.9,
+    "availability_slo": "99.9%"
+  },
+  "x-fallback": {
+    "circuit_breaker": "错误率超基线 2x 持续 5 分钟，或任一契约场景探针失败 → 流量切回上一 champion（<60s，RB-001）",
+    "out_of_scope": "命中 known_failures 场景 → 按声明降级（拒答/转人工/小模型兜底），不得幻觉补全"
+  },
+  "x-known_failures": [
+    "多轮工具调用深度 > 8 时成功率骤降（见 TRJ 事件分析 run-2026-1012）",
+    "拒答边界样本在 adversarial 子集上的校准尚未评测"
+  ],
+  "title": "模型服务契约",
+  "description": "MODEL 交付给 AGENT 的成品说明书：签名、预算、降级、已知失效。接口新增可选参数 = 非破坏；删除/收窄 = 新 major + 双跑。"
+}

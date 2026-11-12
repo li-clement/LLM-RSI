@@ -1,57 +1,62 @@
-# Execution 平面：四流水线与五门禁
+# Execution 平面：四流水线与五门禁（RSI 适配）
 
-Execution 平面把"部门间承诺"变成"可审计证据"。每条流水线有固定触发、固定产物目录；**门禁不通过，状态机不许跃迁**。
+Execution 平面把"这一轮真的变好了吗"变成**可审计证据**。每条流水线有固定触发、固定产物目录；门禁不通过，状态机不许跃迁。
 
 ## 四流水线
 
 ### P1 Spec 流水线（Spec 仓库 CI）
 
 - **触发**：`specs/**` 或 `knowledge/**` 的任何 PR。
-- **阶段**：
-  1. `tools/check.py --strict`（三平面一致性：ID、引用、TTL、状态机合法性）→ 配置见 [ci/specrepo-ci.yml](ci/specrepo-ci.yml)；
-  2. 契约 lint（spectral 对 openapi/asyncapi）；
-  3. 契约兼容性 diff（oasdiff / json-schema-diff，基线 = main）→ **breaking 检测即拦截，需 CR**；
-  4. Agent jobs：spec-summarizer（PR 摘要+影响面）、contract-impact（consumer 波及分析）。
+- **阶段**（配置见 [ci/specrepo-ci.yml](ci/specrepo-ci.yml)）：
+  1. `tools/check.py --strict`：三平面一致性（ID、引用、TTL、状态机、契约类型必填扩展）；
+  2. 契约 lint：JSON Schema / asyncapi 校验；
+  3. **兼容性 diff**：数据集与接口 schema 用 json-schema-diff；**`EVAL-BENCH` 任何字段变更自动标红并要求委员会决议编号**（换尺子防线）；
+  4. Agent jobs：cycle-summarizer（PR 摘要与波及点名）、contract-impact（数据集/协议变更 → 下游训练配置与在跑循环的波及枚举）。
 - **产物**：`reports/<run>/check.json`、`compat.md`、`impact.md`。
 
-### P2 BU 开发流水线（各 BU 自有仓库，模板见 [ci/bu-dev-ci.example.yml](ci/bu-dev-ci.example.yml)）
+### P2 团队开发流水线（两条，各团队自有仓库）
 
-- **触发**：业务仓库 push / MR。
-- **必含两个跨平面 job**（接入 TriPlane 的最低义务）：
-  1. **契约测试**：从 Spec 仓库拉取相关契约 + 契约场景（S-xxx），跑消费者/提供者验证（Pact 风格或场景直译）；
-  2. **知识门禁**：MR 描述必须引用 ≥1 个知识项 ID 或显式 `knowledge: none`；改动涉及契约实现时自动注入对应 pitfall 清单给评审者与 Agent。
-- **Agent jobs**：scenario-forge（场景→测试骨架 PR）、test-weaver（契约 CR→消费方测试补丁 PR）。
+**DATA 数据流水线**（[ci/data-ci.example.yml](ci/data-ci.example.yml)）：
+- 每个批次构建：契约场景直译的质量断言（去重率、污染计数、lineage 完备率、合成占比）——**断言即测试**，红灯批次不得发布版本号。
 
-### P3 集成流水线（跨 BU 汇合）
+**MODEL 训练流水线**（[ci/model-ci.example.yml](ci/model-ci.example.yml)）：
+- 训练配置必须引用 frozen 契约版本与具体数据集版本（禁止"读最新"）；
+- **污染预检**：训练 mix 对 holdout deny-list 的相似度自检（本地通道，P3 审计为终裁）；
+- 注册 challenger 时写入契约版本指纹。
 
-- **触发**：任一契约进入 `frozen`，或集成窗口手动触发。
-- **阶段**：从契约自动装配虚拟化环境（provider 真实 + consumer 打桩 / 双端真实二选一）→ 执行全部 `executable: true` 的 Scenario → 产出**证据报告**（通过率、契约版本指纹、环境清单）。
-- **门禁**：G3 = 通过率 100% 且兼容 diff 无未走 CR 的变更。证据报告是 KB 的附件，没有报告不能进 G4。
+两个团队共同的跨平面义务：MR 引用知识项 ID 或显式 `knowledge: none`；涉及契约实现变更时自动注入相关 pitfall 清单给评审者与结对 Agent。
+
+### P3 收敛流水线（评测——RSI 的生命线）
+
+- **触发**：契约进入 `frozen` 且 challenger 注册完成。
+- **阶段**：装配 frozen 环境 → **污染审计**（n-gram + embedding 双通道，`eval_leak_count == 0`）→ **评测双跑**（按 `EVAL-BENCH.x-protocol`，复现偏差 ≤ 阈值）→ 全量契约场景 + 验收场景执行 → 证据报告（run_id、契约版本指纹、回归矩阵、审计原始输出）。
+- **门禁 G3**：三硬条件——污染 = 0、复现达标、场景 100%。**失败循环同样归档完整证据**（负结果是一等产出）。
 
 ### P4 发布流水线
 
-- **触发**：G3 绿 + Delivery Steward 发起。
-- **阶段**：依赖图排期（release-orchestrator 生成：提供方先/消费方后、major 共存窗口）→ flag 灰度 → 观察期探针（直接复用契约场景断言作线上探针）→ G5 回流检查（distiller 候选 ≥1 被处置）。
-- **回滚**：见 [RB-001](../knowledge/runbooks/RB-001-contract-freeze-rollback.md)。
+- **触发**：G3 绿 + Release Steward 发起 KB。
+- **阶段**：champion–challenger 编排草案（release-orchestrator 生成：shadow ≥48h → 灰度阶梯 → 热备期）→ G4 四方联签 → 执行 RB-001 → 观察期探针直接复用契约断言 → **G5 回流检查**（experiment-distiller 候选 ≥1 被 Curator 处置）。
+- **回滚**：见 [RB-001](../knowledge/runbooks/RB-001-model-promotion-rollback.md)。
 
 ## 五道门禁一览
 
 | 门禁 | 判定 | 证据 | 跃迁 |
 |---|---|---|---|
-| G1 三平面校验 | check.py 严格模式绿 | CI 日志 | 任何 Spec PR 可合并 |
-| G2 契约冻结 | 联签 + G1 绿 | PR merge commit | Feature → `frozen` |
-| G3 契约收敛 | P3 场景 100% + 无未审破坏 | 证据报告 | 允许发起 KB |
-| G4 KB 联签 | 各 BU Steward 签 + 排期确认 | KB 记录 | 允许 P4 灰度 |
-| G5 观察与回流 | 探针绿 48h + 候选知识被处置 | 观察报告 | Feature → `released` |
+| G1 三平面校验 | check.py 严格模式绿 + eval diff 无未批变更 | CI 日志 | Spec PR 可合并 |
+| G2 契约冻结 | 四方联签 + G1 绿 | PR merge commit | 循环开跑（起跑线锁定） |
+| G3 收敛全绿 | 污染 = 0 · 评测复现 ≤ ε · 场景 100% | 证据报告 | 允许发起 KB |
+| G4 KB 联签 | 四 Steward 签 + PAT-001 三件套 | KB 记录 | 允许 shadow/灰度 |
+| G5 观察与回流 | 探针绿 48h + 候选知识被处置（含负结果） | 观察报告 | Feature → `released`（新 champion 转正） |
 
 ## 工具占位与替换原则
 
 | 用途 | 示例工具 | 备注 |
 |---|---|---|
-| 三平面一致性 | `tools/check.py`（自带） | 只依赖 stdlib，可直接进任意 CI |
-| 契约 lint | Spectral | 规则包可定制 |
-| 兼容性判定 | oasdiff（API）、json-schema-diff（事件/数据） | **工具结论优先于人** |
-| 契约测试 | Pact 或场景直译测试 | S-xxx 的 `runner` 字段指向实现 |
-| 环境装配 | WireMock/本地 stub，以契约为源 | 契约即 mock——SDD 的红利 |
+| 三平面一致性 | `tools/check.py`（自带） | 纯 stdlib，任意 CI |
+| 数据集质量断言 | pandera / Great Expectations | S-003 断言直译 |
+| schema 兼容性 | json-schema-diff / oasdiff | **工具结论优先于人** |
+| 污染审计 | n-gram（MinHash）+ embedding ANN | P3 双通道，deny-list 只在 DATA 侧 |
+| 评测执行 | 自有 harness + 实验跟踪（MLflow/W&B 类） | run_id 与契约版本指纹入报告 |
+| 模型注册与灰度 | 注册表 + 分流平台 | champion 热备 ≥14 天 |
 
-替换任何工具时保持三条不变：产物落 `reports/<run>/`、门禁语义不变、Agent playbook 的输入输出不变。
+替换任何工具时保持三条不变：产物落 `reports/<run>/`、门禁语义不变、playbook 输入输出不变。

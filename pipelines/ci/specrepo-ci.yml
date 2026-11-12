@@ -18,31 +18,38 @@ jobs:
         with:
           fetch-depth: 0   # 兼容性 diff 需要与 main 的 merge-base
 
-      # G1：三平面一致性（ID/引用/TTL/状态机）——唯一硬依赖是 python
+      # G1：三平面一致性（ID/引用/TTL/状态机/契约类型必填扩展）——唯一硬依赖是 python
       - name: TriPlane consistency check
-        run: python3 tools/check.py --strict | tee reports_g1.log
+        run: mkdir -p reports && python3 tools/check.py --strict | tee reports/g1.log
 
-      # 契约 lint（占位：安装 spectral 后启用）
-      - name: Contract lint (spectral)
+      # 契约 lint：JSON Schema / asyncapi（占位：接入 ajv / spectral 后启用）
+      - name: Contract lint
         run: |
-          npm i -g @stoplight/spectral-cli
-          find specs/contracts -name '*.openapi.json' -o -name '*.asyncapi.json' |
-            xargs -r -I{} spectral lint {}
+          npm i -g ajv-cli
+          for f in specs/contracts/*.schema.json; do
+            ajv compile --spec=draft2020 -s "$f" || exit 1
+          done
 
-      # 兼容性判定：契约文件被改动时，对基线版本做 breaking diff
-      - name: Contract compatibility diff
+      # 兼容性判定 + 换尺子防线
+      - name: Contract compatibility & eval-protocol diff
         run: |
-          # oasdiff-action breaking 为占位；也可用 oasdiff CLI 自写
-          # 语义：检测到 breaking 且 PR 未关联 CR（标题含 CR-）→ 失败
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'specs/contracts/*.json' || true)
+          # 1) 契约文件变更必须关联 CR（标题含 CR-<num>）
           if [ -n "$CHANGED" ] && [[ ! "${{ github.event.pull_request.title }}" =~ CR- ]]; then
-            echo "::error::契约变更必须关联 CR（标题含 CR-<num>）；breaking 判定由 oasdiff 执行"
+            echo "::error::契约变更必须关联 CR；breaking 判定由 json-schema-diff/oasdiff 执行"
             exit 1
           fi
+          # 2) EVAL-BENCH 任何字段变更：自动标红，需 PR 描述含委员会决议编号（RES-）
+          if echo "$CHANGED" | grep -q 'EVAL-'; then
+            if [[ ! "${{ github.event.pull_request.body }}" =~ RES- ]]; then
+              echo "::error::评测协议变更一律按破坏性处理，需治理委员会决议编号（RES-<num>）——换尺子零容忍"
+              exit 1
+            fi
+          fi
 
-      # Agent job：spec-summarizer（起草性产出，不阻塞合并）
-      - name: Spec summarizer agent (draft only)
-        if: github.actor != 'bot-spec-agent'
+      # Agent job：cycle-summarizer（起草性产出，不阻塞合并）
+      - name: Cycle summarizer agent (draft only)
+        if: github.actor != 'bot-cycle-agent'
         run: |
           # 调用约定见 agents/playbooks.md #1：输入=PR diff + 受影响 ID 列表，输出=PR 评论
-          echo "POST ${{ vars.AGENT_API }}/spec-summarizer"   # 占位：接入公司 Agent 网关
+          echo "POST ${{ vars.AGENT_API }}/cycle-summarizer"

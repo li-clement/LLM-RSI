@@ -1,41 +1,43 @@
 # 契约（Contract）规范
 
-契约是 Spec 平面的**硬通货**：机器可读的 JSON 文件，人和 Agent 消费同一份。
+契约是 Spec 平面的**硬通货**：机器可读 JSON，人和 Agent 消费同一份。RSI 项目共五类：
+
+| kind | flavor（文件后缀） | 承载 | 一句话 |
+|---|---|---|---|
+| `dataset` | `.schema.json` | 数据集记录 schema + SLA + 质量断言 | 训练食材的安全标准 |
+| `event` | `.asyncapi.json` | 轨迹回流事件流 | 循环的"血液"管道 |
+| `api` | `.openapi.json` | 同步接口（如有） | 传统接口契约 |
+| `eval` | `.eval.json` | 评测协议：基准/指标/阈值/隔离 | **循环的裁判** |
+| `model` | `.model.json` | 模型服务契约：签名/预算/降级/失效清单 | 成品的说明书 |
 
 ## 文件格式
 
-`specs/contracts/<ID>.v<major>.<flavor>.json`
-
-- `openapi`：同步 API，OpenAPI 3.0 文档；
-- `asyncapi`：异步事件，AsyncAPI 2.6 文档；
-- `schema`：共享数据结构，JSON Schema 2020-12。
-
-元数据内嵌在文档的 `x-contract` 扩展字段中（单一文件即完整事实，无 sidecar）：
+`specs/contracts/<ID>.v<major>.<flavor>.json`，元数据内嵌在文档的 `x-contract` 字段（单文件即完整事实）：
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
-| `id` | ✓ | `<域码>-<动作>`，与文件名一致 |
-| `kind` | ✓ | `api` / `event` / `data`（必须与 flavor 对应） |
-| `version` | ✓ | semver；主版本必须等于文件名 `v<N>` |
-| `status` | ✓ | `active` / `deprecated`（后者必须带 `sunset`） |
-| `owner` | ✓ | 提供方 BU 代码（如 `MID`） |
-| `consumers` | ✓ | 消费方 BU 代码数组（至少 1 个） |
-| `compatibility` | ✓ | `backward` / `forward` / `bidirectional` |
-| `steward` | ✓ | Contract Steward 的负责人标识 |
+| `id` / `kind` / `version` / `status` / `owner` / `consumers` / `compatibility` / `steward` | ✓ | 见 specs/README.md 规则 |
+| `approval` | eval 必填 | 固定 `committee`——阈值冻结权在治理委员会 |
+
+各 kind 的额外必填扩展（check.py 校验）：
+
+- `dataset`：`x-sla`（cadence / freshness_days / min_count）+ `x-quality`（≥1 条可执行断言，必须含污染审计条目）；
+- `eval`：`x-protocol`（benchmark / metrics / thresholds / isolation 四节齐全）；
+- `model`：`x-signature`（input/output）+ `x-budget` + `x-fallback`；
+- `event` / `api`：本体即标准 spec，无额外扩展。
 
 ## 变更规则速览
 
-1. 非破坏变更：改 `version` 的 minor/patch，PR 由对方 BU 的 Steward 审核。
-2. 破坏性变更：新建 `v<N+1>` 文件 + 旧文件转 `deprecated` + `sunset` 日期 ≥ 90 天后；必须附 [CR](../../templates/contract-change.md)。
-3. 字段删除/枚举收窄/必填新增 = 破坏性变更，无例外（见 [PIT-001](../../knowledge/pitfalls/PIT-001-event-field-narrowing.md)）。
-4. CI（P1）会用 oasdiff / json-schema-diff 类工具做兼容性判定，Agent 报告仅作预分析，**工具结论优先**。
+1. 非破坏变更：minor 递增，对方 Steward 审核。
+2. 破坏性变更：新 `v<N+1>` 文件 + 旧转 `deprecated` + `sunset` ≥90 天后 + CR（含双跑与波及清单）。
+3. **评测协议例外**：阈值与指标定义变更，无论 schema 是否兼容，一律破坏性 + 委员会批准——防"换尺子"是本模式在 RSI 场景的第一优先级（见 PIT-001）。
+4. CI（P1）用 schema-diff / oasdiff 类工具判定兼容性，**工具结论优先于人**；Agent 报告仅作预分析。
 
 ## 当前契约清单
 
 | 契约 | kind | owner | consumers | status |
 |---|---|---|---|---|
-| ORD-CREATE.v1 | api | MID | FRONT* | active |
-| ORD-PAID.v1 | event | MID | PAY, FULFILL | active |
-| PAY-CONFIRM.v1 | api | PAY | MID | active |
-
-（* 示例中前端渠道以消费方标注，试点期只计入 BU 级 consumer。）
+| TRJ-ROLLOUT.v1 | event | MODEL | DATA | active |
+| DS-TRAINMIX.v1 | dataset | DATA | MODEL | active |
+| EVAL-BENCH.v1 | eval | DATA | MODEL | active（approval: committee） |
+| MDL-SERVE.v1 | model | MODEL | AGENT | active |

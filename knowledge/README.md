@@ -18,12 +18,12 @@ Knowledge 平面承载**组织记忆**：术语、能力边界、决策、模式
 ```yaml
 id: PAT-001            # <类型码>-<num>：ADR/PAT/PIT/RB/CARD/DOM
 type: pattern          # 与目录对应
-title: 跨部门契约幂等键模式
-scope: cross-bu        # cross-bu | bu:<code> | team
-confidence: high       # high | medium | low
+title: Champion–Challenger 转正模式
+scope: cross-bu        # cross-bu | bu:<code> | team:<name>
+confidence: high       # high（多循环验证过） | medium（单来源） | low（推测）
 status: accepted       # candidate | accepted | retired
-owner: "@wang-q"       # 复核责任人（Curator 或领域负责人）
-provenance: [INC-2025-118, MR-mid-3421]   # 出处，必须有
+owner: "@curator-model" # 复核责任人（Curator 或领域负责人）
+provenance: [RUN-2026-1104, INC-RSI-002]   # 出处，必须有
 expires: 2027-06-30    # TTL；decision 无此字段，用 status: superseded
 ```
 

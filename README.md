@@ -1,6 +1,6 @@
-# TriPlane · 三平面协同模式工具箱
+# TriPlane · 三平面协同模式工具箱（RSI 适配）
 
-面向**多 BU / 跨部门高效协同开发**的可落地模式：**Spec 平面（SDD）× Knowledge 平面（知识工程）× Execution 平面（流水线与门禁）**，AI Agent 为一等公民。
+面向**跨数据团队（DATA）与模型团队（MODEL）的递归自我改进（RSI）项目**的可落地模式：**Spec 平面（SDD）× Knowledge 平面（知识工程）× Execution 平面（流水线与门禁）**，AI Agent——含 RSI 循环自身的改进提案——为一等公民。
 
 - 完整设计读 [MODE.md](MODE.md)
 - Agent 入口读 [AGENTS.md](AGENTS.md)
@@ -32,13 +32,13 @@ cp templates/feature-spec.md specs/features/F-2026-002-xxx.md
 
 | 目录 | 内容 | 平面 |
 |---|---|---|
-| [specs/](specs/README.md) | 工件链规则、状态机、命名、版本策略 + 一套端到端示例 | Spec |
+| [specs/](specs/README.md) | 工件链规则、状态机、命名、五类契约与版本策略 + 端到端示例 | Spec |
 | [knowledge/](knowledge/README.md) | 六类知识资产的元数据 schema、生命周期、回流规则 + 示例 | Knowledge |
-| [pipelines/](pipelines/README.md) | 四流水线模型、五道门禁、CI 配置示例 | Execution |
-| [agents/playbooks.md](agents/playbooks.md) | 7 个流水线内嵌 Agent 的任务书 | 跨平面 |
+| [pipelines/](pipelines/README.md) | 四流水线模型（含 P3 评测收敛）、五道门禁、CI 配置示例 | Execution |
+| [agents/playbooks.md](agents/playbooks.md) | 7 个流水线内嵌 Agent 的任务书 + RSI 自提案治理 | 跨平面 |
 | [templates/](templates/) | 六类工件模板 | — |
 | [tools/check.py](tools/check.py) | 三平面一致性校验器 | — |
 
 ## 示例场景
 
-示例用"下单—支付闭环"跨 `MID`（交易中台部）与 `PAY`（支付部）两个 BU 协作，完整展示 Epic → Feature → 3 个契约 → 3 个场景 → ADR/模式/坑点/Runbook/能力卡 的引用咬合关系，可作为试点第一周的填空范本。
+示例用**一个完整的 RSI 改进循环**（目标维度：工具调用成功率）跨 `DATA`（数据团队）/ `MODEL`（模型团队）/ `AGENT`（Agent 平台团队）协作，完整展示：循环规格（Feature）→ 四类契约（轨迹事件 / 训练集 / 评测协议 / 模型服务）→ 五个场景（污染阻断、评测复现、champion 转正、熔断回滚、自提案治理）→ 三权分立 ADR / champion–challenger 模式 / 污染坑点 / 发布 Runbook / 能力卡的引用咬合关系，可作为试点第一周的填空范本。

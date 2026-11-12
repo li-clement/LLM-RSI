@@ -1,0 +1,45 @@
+# P2 DATA 数据流水线 —— 数据团队接入 TriPlane 的最小义务模板
+# 契约场景直译 = 质量断言即测试；红灯批次不得发布数据集版本号。
+name: data-pipeline-ci-triplane
+
+on:
+  push:
+    branches: ["batch/**"]
+
+jobs:
+  dataset-contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen contracts & scenarios
+        run: |
+          git clone --depth 1 https://git.internal/triplane-rsi.git .triplane
+          python3 .triplane/tools/check.py stats   # 三平面健康度写入构建日志
+
+      # S-003 断言直译（pandera/GX 风格占位）
+      - name: Dataset quality assertions (S-003)
+        run: |
+          python3 -m quality_suite run \
+            --contract specs/contracts/DS-TRAINMIX.v1.schema.json \
+            --scenario S-003 \
+            --batch "${{ github.ref_name }}" \
+            --block-on "eval_leak_count,pairwise_dedup_rate,synthetic_share,lineage_complete_rate"
+
+      # 污染预检（本地通道；P3 审计为终裁，deny-list 不下发给 MODEL）
+      - name: Contamination pre-check
+        run: python3 -m quality_suite leakcheck --minhash-threshold 0.85 --fail-on-any
+
+      # 知识门禁：MR/批次描述必须引用知识项 ID 或显式 none
+      - name: Knowledge reference gate
+        run: |
+          BODY="$(git log -1 --pretty=%b)"
+          if ! echo "$BODY" | grep -Eq "knowledge:[[:space:]]*(none|([A-Z]+-[0-9]+[[:space:]]*,?)+)"; then
+            echo "::error::批次说明需含 knowledge: 行（引用 ID 或 none），见 knowledge/README.md"
+            exit 1
+          fi
+
+      # 绿灯后发布数据集版本（版本号 + 契约版本指纹写进 manifest）
+      - name: Publish dataset version
+        if: success()
+        run: python3 -m quality_suite publish --manifest batch_manifest.json

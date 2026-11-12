@@ -1,0 +1,59 @@
+{
+  "x-contract": {
+    "id": "EVAL-BENCH",
+    "kind": "eval",
+    "version": "1.0.0",
+    "status": "active",
+    "owner": "DATA",
+    "consumers": [
+      "MODEL"
+    ],
+    "compatibility": "bidirectional",
+    "steward": "@eval-steward",
+    "approval": "committee"
+  },
+  "x-protocol": {
+    "benchmark": {
+      "ref": "model-registry.rsi.internal/eval/holdout-toolcall",
+      "holdout_size_min": 800,
+      "rotation_days": 45,
+      "contamination_budget": 0,
+      "note": "轮换与复用规则见 isolation；holdout 构成变更 = 新 major"
+    },
+    "metrics": [
+      {
+        "id": "target_gain",
+        "def": "目标维度（工具调用成功率）相对现任 champion 的百分点差；判分器 judge_version 必须 pin 到本文件登记值",
+        "direction": "up"
+      },
+      {
+        "id": "regression_dims",
+        "def": "guard 维度（指令遵循、长上下文问答、拒答正确率）中成功率下降 > 0.5pp 的维度个数",
+        "direction": "zero"
+      },
+      {
+        "id": "cost_per_solve",
+        "def": "每次成功任务的平均推理成本（元），按 MDL-SERVE.x-budget 口径计",
+        "direction": "bounded"
+      },
+      {
+        "id": "reproducibility_gap",
+        "def": "同一 (model, dataset, seed 策略) 两次独立评测运行的 target 指标差绝对值",
+        "direction": "bounded"
+      }
+    ],
+    "thresholds": {
+      "target_gain": ">= +3.0pp",
+      "regression_dims": "== 0",
+      "cost_per_solve": "<= champion x 1.1",
+      "reproducibility_gap": "<= 0.3pp"
+    },
+    "isolation": [
+      "holdout 及其任何衍生（改写、蒸馏、合成同题）不得进入训练 mix：DS-TRAINMIX.x-quality 的 eval_leak_count==0 由 P3 审计机器执行（n-gram + embedding 相似度双通道）",
+      "评测题生成与判分器维护均在 DATA；MODEL 不得建立私下评测集（ADR-0001）",
+      "本文件 metrics 与 thresholds 的任何变更一律按破坏性处理，仅治理委员会可批"
+    ]
+  },
+  "title": "评测协议契约（RSI 循环的裁判）",
+  "description": "challenger 是否转正只以本协议执行为准。评测执行记录（run_id、双跑差值、回归矩阵）是 G3/G4 的证据附件。"
+}

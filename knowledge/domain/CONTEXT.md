@@ -1,37 +1,41 @@
 ---
 id: DOM-001
 type: glossary
-title: 交易域统一语言
+title: RSI 项目统一语言
 scope: cross-bu
 confidence: high
 status: accepted
-owner: "@curator-mid, @curator-pay"
-provenance: [S1-共创工作坊-2026-10-28, INC-2025-118]
+owner: "@curator-data, @curator-model"
+provenance: [S1-立靶工作坊-2026-10-28, RUN-2026-1104-失焦复盘]
 expires: 2027-02-01
 ---
 
-# 跨 BU 统一语言（术语仲裁唯一源）
+# 跨团队统一语言（术语仲裁唯一源）
 
-歧义是跨部门协同最贵的税。以下定义**优先于**任何 BU 内部惯用法；新术语/改定义走 CR 给 Curator。
+"变好了吗"之所以吵不清，多数时候是词没对齐。以下定义**优先于**任何团队内部惯用法；新术语/改定义走 CR 给 Curator，评测口径词必须同时引用契约 ID。
 
-## BU 代码表
+## 团队与域码表
 
 | 代码 | 组织 | 域码 |
 |---|---|---|
-| MID | 交易中台部 | ORD |
-| PAY | 支付部 | PAY |
-| FULFILL | 履约物流部 | FUL |
+| DATA | 数据团队 | DS / EVAL |
+| MODEL | 模型团队 | TRJ / MDL |
+| AGENT | Agent 平台团队 | —（消费方） |
 
 ## 术语表
 
 | 术语 | 定义 | 不是什么 | 首次裁定 |
 |---|---|---|---|
-| 订单（Order） | 买家一次购买意图的 MID 域凭证，生命周期由 ORD 契约定义 | 不是支付单，不是履约单 | ADR-0001 |
-| 支付单（Payment） | PAY 域对一次资金收付的凭证，以 `paymentId` 标识 | 不含购物车信息 | PAY-CONFIRM.v1 |
-| 支付成功（succeeded） | PAY 域终态：资金已收妥且不可自动回滚 | 不等于"订单已支付"——后者须 MID 发布 ORD-PAID.v1 后成立 | ADR-0001 |
-| 幂等键（Idempotency-Key） | 调用方生成、服务端保存的请求去重凭证，见 PAT-001 | 不是 traceId，不是订单号 | ADR-0001 |
-| 金额（amountCents） | 以最小货币单位计的 64 位整数 | 禁止浮点、禁止字符串金额 | CONTEXT 决议 2026-10 |
-| 终态（terminal state） | 不可再迁移的状态 | pending 不是终态 | S-004 |
-| 冻结（frozen） | Feature/契约状态：此后变更只能走 CR | 不是"不能提 PR" | MODE §3.2 |
-| KB（跨 BU 联签） | 各 BU Steward 对发布签核的合称 | 不是部门内上线审批 | G4 |
-| 事实事件（fact event） | 对已发生事实的记录，消费方按至少一次设计 | 不是命令 | ORD-PAID.v1 |
+| 改进循环（cycle） | 一次"回流→组装→训练→评测→转正"的完整递归，= 一个 Feature | 不是实验批次，不是训练 run | E-001 |
+| 轨迹（rollout trace） | 一次 agent 任务实例的完整步骤序列 + 终局判分，主键 `episode_id` | 不是会话日志原文（正文走对象存储，哈希入契约） | TRJ-ROLLOUT.v1 |
+| 回流 | 轨迹经采样/脱敏进入数据域的过程 | 不是全量复制；采样率变更 = mix 口径变更 | S-002 |
+| 训练 mix | 一个数据集版本内各来源（human/rollout/distilled/synthetic）的构成与配比 | 不是超参；配比语义属契约 | DS-TRAINMIX.v1 |
+| 污染（contamination） | holdout 及其任何衍生（改写/蒸馏/同题合成）出现在训练 mix | 不只是"同文本重复"——同题变体也算 | ADR-0001 |
+| holdout | EVAL-BENCH 引用的基准题集，45 天轮换 | 不是"测试集随手备份" | EVAL-BENCH.v1 |
+| champion / challenger | 现任线上基准模型 / 本轮候选 | challenger 赢了才叫 champion，裁判是 EVAL-BENCH | PAT-001 |
+| 目标维度 / guard 维度 | 本轮唯一优化指标 / 只许持平的地板指标 | guard 不设防 = 循环失控 | EVAL-BENCH.v1 |
+| 换尺子 | 未经委员会的指标定义/阈值/judge 版本变更 | 不是"口径优化"——口径只能走 CR | PIT-001 |
+| 判分口径（judge_version） | 判分器实现的登记版本 | judge 升级 = 协议变更（可能破坏可比性） | S-004 |
+| 冻结（frozen） | 循环起跑线：契约口径锁定，循环中禁改 | 不是代码冻结 | MODE §3.3 |
+| KB（联签） | DATA+MODEL+AGENT 三方 Steward 对转正上线的签核 | 不是单团队上线审批 | G4 |
+| 负结果 | challenger 未达标但证据完整的循环产出 | 不是失败废料——必须蒸馏入库 | G5 |
